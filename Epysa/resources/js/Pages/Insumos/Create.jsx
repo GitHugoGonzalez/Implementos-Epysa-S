@@ -3,26 +3,38 @@ import { Head, useForm, Link } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
 
 export default function Create() {
-    const { data, setData, post, processing, errors, reset, transform } =
-        useForm({
-            nombre_insumo: "",
-            stock: "",
-            descripcion_insumo: "",
-            precio_insumo: "",
-            imagen: null,
-        });
+  const { data, setData, post, processing, errors, reset, transform } = useForm({
+    nombre_insumo: '',
+    stock: '',
+    descripcion_insumo: '',
+    precio_insumo: '', // guardaremos "9990" (sin formato) para CLP
+    imagen: null,
+  });
+   
 
     const [preview, setPreview] = useState(null);
     const fileRef = useRef(null);
 
-    // Enviar como FormData (necesario para archivo)
-    transform((payload) => {
-        const fd = new FormData();
-        Object.entries(payload).forEach(([k, v]) => {
-            if (v !== null && v !== undefined) fd.append(k, v);
-        });
-        return fd;
-    });
+  // Helpers CLP
+  const onlyDigits = (str) => (str || '').toString().replace(/\D/g, '');
+  const formatCLP = (val) => {
+    const digits = onlyDigits(val);
+    if (!digits) return '';
+    return new Intl.NumberFormat('es-CL').format(Number(digits));
+  };
+
+  // Enviar como FormData (necesario para archivo)
+  transform((payload) => {
+    const fd = new FormData();
+    // Enviamos precio_insumo sin formato (solo dígitos)
+    const cleanPrecio = onlyDigits(payload.precio_insumo);
+    fd.append('nombre_insumo', payload.nombre_insumo ?? '');
+    fd.append('stock', payload.stock ?? '');
+    fd.append('descripcion_insumo', payload.descripcion_insumo ?? '');
+    fd.append('precio_insumo', cleanPrecio || ''); // "9990"
+    if (payload.imagen) fd.append('imagen', payload.imagen);
+    return fd;
+  });
 
     const handleFile = (e) => {
         const file = e.target.files?.[0] ?? null;
