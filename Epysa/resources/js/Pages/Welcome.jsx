@@ -8,7 +8,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex justify-between items-center py-4">
                         <div className="text-gray-800 font-bold text-xl">
-                            Mi App
+                            Mi asd 
                         </div>
                         <div className="flex space-x-4">
                             {auth.user ? (
