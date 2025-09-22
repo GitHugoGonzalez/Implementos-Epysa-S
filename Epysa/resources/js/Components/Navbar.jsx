@@ -1,97 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
-import axios from 'axios';
+// resources/js/Components/Navbar.jsx
+import { Link } from "@inertiajs/react";
 
 export default function Navbar() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      axios.defaults.withCredentials = true;
-      await axios.get('/sanctum/csrf-cookie');
-      const response = await axios.get('/api/user');
-      setUser(response.data);
-      setIsAuthenticated(true);
-    } catch (error) {
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await axios.post('/logout');
-      setIsAuthenticated(false);
-      setUser(null);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
-
-  if (loading) {
     return (
-      <nav className="bg-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center py-4">
-            <div className="animate-pulse bg-gray-200 h-8 w-32 rounded"></div>
-          </div>
-        </div>
-      </nav>
+        <nav className="bg-white shadow-md">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="flex h-16 justify-between items-center">
+                    {/* Logo */}
+                    <div className="flex items-center">
+                        <Link
+                            href="/"
+                            className="text-xl font-bold text-gray-800 hover:text-gray-600"
+                        >
+                            Mi Plataforma
+                        </Link>
+                    </div>
+
+                    {/* Links */}
+                    <div className="flex space-x-6">
+                        <Link
+                            href="/dashboard"
+                            className="text-gray-700 hover:text-black transition"
+                        >
+                            Dashboard
+                        </Link>
+                        <Link
+                            href="/insumos"
+                            className="text-gray-700 hover:text-black transition"
+                        >
+                            Insumos
+                        </Link>
+                        <Link
+                            href="/perfil"
+                            className="text-gray-700 hover:text-black transition"
+                        >
+                            Perfil
+                        </Link>
+                    </div>
+
+                    {/* Botón logout */}
+                    <div>
+                        <Link
+                            href={route("logout")}
+                            method="post"
+                            as="button"
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                        >
+                            Cerrar sesión
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </nav>
     );
-  }
-
-  return (
-    <nav className="bg-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex space-x-4">
-            <Link href="/" className="text-gray-800 font-bold text-xl">
-              Mi App
-            </Link>
-          </div>
-
-          <div className="flex space-x-4 items-center">
-            <Link href="/" className="text-gray-600 hover:text-gray-800 px-3 py-2">
-              Inicio
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-gray-800 px-3 py-2">
-              Acerca de
-            </Link>
-
-            {isAuthenticated ? (
-              <>
-                {/* 👉 Aquí agregamos el botón para Insumos */}
-                <Link
-                  href={route('insumos.create')}
-                  className="text-gray-600 hover:text-gray-800 px-3 py-2"
-                >
-                  Agregar Insumo
-                </Link>
-
-                <span className="text-gray-600">Hola, {user?.name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-600 hover:text-gray-800 px-3 py-2"
-                >
-                  Cerrar Sesión
-                </button>
-              </>
-            ) : (
-              <Link href="/login" className="text-gray-600 hover:text-gray-800 px-3 py-2">
-                Login
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
 }

@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/insumos/crear', [InsumoController::class, 'create'])->name('insumos.create');
+    Route::get('/insumos/index', [InsumoController::class, 'index'])->name('insumos.index');
     Route::post('/insumos', [InsumoController::class, 'store'])->name('insumos.store');
     Route::get('/insumos/{insumo}/imagen', [InsumoController::class, 'imagen'])->name('insumos.imagen');
 });

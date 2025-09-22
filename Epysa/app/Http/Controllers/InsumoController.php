@@ -54,4 +54,31 @@ class InsumoController extends Controller
             ->header('Content-Type', $insumo->imagen_mime ?? 'image/jpeg')
             ->header('Cache-Control', 'public, max-age=604800');
     }
+
+    public function index()
+    {
+        $insumos = Insumo::select(
+            'id_insumo',
+            'nombre_insumo',
+            'stock',
+            'precio_insumo',
+            'descripcion_insumo'
+        )
+        ->orderBy('id_insumo', 'desc')
+        ->get()
+        ->map(function ($insumo) {
+            return [
+            'id_insumo'         => $insumo->id_insumo,
+            'nombre_insumo'     => $insumo->nombre_insumo,
+            'stock'             => $insumo->stock,
+            'precio_insumo'     => $insumo->precio_insumo,
+            'descripcion_insumo'=> $insumo->descripcion_insumo,
+            'imagen_url'        => $insumo->imagen ? route('insumos.imagen', $insumo->id_insumo) : null,
+        ];
+    });
+
+    return Inertia::render('Insumos/Index', [
+        'insumos' => $insumos,
+    ]);
+}
 }
