@@ -1,120 +1,185 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+// resources/js/Pages/Auth/Register.jsx
+import { Head, Link, useForm } from "@inertiajs/react";
+import GuestLayout from "@/Layouts/GuestLayout";
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
     });
 
     const submit = (e) => {
         e.preventDefault();
-
-        post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
+        post(route("register"), {
+            onFinish: () => reset("password", "password_confirmation"),
         });
     };
 
     return (
-        <GuestLayout>
-            <Head title="Register" />
+        <GuestLayout bare>
+            <Head title="Crear cuenta" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value="Nombre" />
-
-                    <TextInput
-                        id="name"
-                        name="name"
-                        value={data.name}
-                        className="mt-1 block w-full"
-                        autoComplete="name"
-                        isFocused={true}
-                        onChange={(e) => setData('name', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.name} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Correo Electrónico" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Contraseña" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirmar Contraseña"
-                    />
-
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                        required
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
+            {/* Split screen como en el login */}
+            <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+                {/* Izquierda: imagen full-bleed */}
+                <div className="hidden md:block">
+                    <img
+                        src="/imagenes/implementos.jpg"
+                        alt="Implementos Epysa"
+                        className="h-full w-full "
                     />
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Ya tienes una cuenta?
-                    </Link>
+                {/* Derecha: panel sin card */}
+                <div className="bg-white flex items-center justify-center px-6 md:px-10">
+                    <div className="w-full max-w-sm">
+                        <h1 className="text-[32px] md:text-[36px] font-black text-gray-900 text-center leading-tight">
+                            Crea tu cuenta
+                        </h1>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Registrate 
-                    </PrimaryButton>
+                        <form onSubmit={submit} className="mt-8 space-y-5">
+                            {/* Nombre */}
+                            <div>
+                                <label
+                                    htmlFor="name"
+                                    className="block text-sm font-semibold text-gray-700 mb-1"
+                                >
+                                    Nombre
+                                </label>
+                                <input
+                                    id="name"
+                                    name="name"
+                                    value={data.name}
+                                    onChange={(e) =>
+                                        setData("name", e.target.value)
+                                    }
+                                    autoComplete="name"
+                                    required
+                                    className="w-full rounded-md bg-gray-100 border border-gray-200 focus:border-gray-400 focus:ring-0 px-4 py-2.5 text-sm placeholder-gray-400"
+                                    placeholder="Tu nombre"
+                                />
+                                {errors.name && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {errors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                                <label
+                                    htmlFor="email"
+                                    className="block text-sm font-semibold text-gray-700 mb-1"
+                                >
+                                    Correo electrónico
+                                </label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    onChange={(e) =>
+                                        setData("email", e.target.value)
+                                    }
+                                    autoComplete="username"
+                                    required
+                                    className="w-full rounded-md bg-gray-100 border border-gray-200 focus:border-gray-400 focus:ring-0 px-4 py-2.5 text-sm placeholder-gray-400"
+                                    placeholder="tu@correo.co"
+                                />
+                                {errors.email && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {errors.email}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Password */}
+                            <div>
+                                <label
+                                    htmlFor="password"
+                                    className="block text-sm font-semibold text-gray-700 mb-1"
+                                >
+                                    Contraseña
+                                </label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    onChange={(e) =>
+                                        setData("password", e.target.value)
+                                    }
+                                    autoComplete="new-password"
+                                    required
+                                    className="w-full rounded-md bg-gray-100 border border-gray-200 focus:border-gray-400 focus:ring-0 px-4 py-2.5 text-sm placeholder-gray-400"
+                                    placeholder="••••••••"
+                                />
+                                {errors.password && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {errors.password}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Confirmación */}
+                            <div>
+                                <label
+                                    htmlFor="password_confirmation"
+                                    className="block text-sm font-semibold text-gray-700 mb-1"
+                                >
+                                    Confirmar contraseña
+                                </label>
+                                <input
+                                    id="password_confirmation"
+                                    type="password"
+                                    name="password_confirmation"
+                                    value={data.password_confirmation}
+                                    onChange={(e) =>
+                                        setData(
+                                            "password_confirmation",
+                                            e.target.value
+                                        )
+                                    }
+                                    autoComplete="new-password"
+                                    required
+                                    className="w-full rounded-md bg-gray-100 border border-gray-200 focus:border-gray-400 focus:ring-0 px-4 py-2.5 text-sm placeholder-gray-400"
+                                    placeholder="••••••••"
+                                />
+                                {errors.password_confirmation && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {errors.password_confirmation}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* CTA */}
+                            <div className="space-y-3">
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition px-4 py-3 text-white font-semibold"
+                                >
+                                    Registrarse
+                                </button>
+
+                                <div className="text-center text-sm">
+                                    <span className="text-gray-600">
+                                        ¿Ya tienes una cuenta?{" "}
+                                    </span>
+                                    <Link
+                                        href={route("login")}
+                                        className="text-blue-600 hover:text-blue-700 underline"
+                                    >
+                                        Inicia sesión
+                                    </Link>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
+            </div>
         </GuestLayout>
     );
 }
