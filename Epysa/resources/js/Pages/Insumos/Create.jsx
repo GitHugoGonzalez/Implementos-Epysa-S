@@ -6,19 +6,31 @@ export default function Create() {
     nombre_insumo: '',
     stock: '',
     descripcion_insumo: '',
-    precio_insumo: '',
+    precio_insumo: '', // guardaremos "9990" (sin formato) para CLP
     imagen: null,
   });
 
   const [preview, setPreview] = useState(null);
   const fileRef = useRef(null);
 
+  // Helpers CLP
+  const onlyDigits = (str) => (str || '').toString().replace(/\D/g, '');
+  const formatCLP = (val) => {
+    const digits = onlyDigits(val);
+    if (!digits) return '';
+    return new Intl.NumberFormat('es-CL').format(Number(digits));
+  };
+
   // Enviar como FormData (necesario para archivo)
   transform((payload) => {
     const fd = new FormData();
-    Object.entries(payload).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) fd.append(k, v);
-    });
+    // Enviamos precio_insumo sin formato (solo dígitos)
+    const cleanPrecio = onlyDigits(payload.precio_insumo);
+    fd.append('nombre_insumo', payload.nombre_insumo ?? '');
+    fd.append('stock', payload.stock ?? '');
+    fd.append('descripcion_insumo', payload.descripcion_insumo ?? '');
+    fd.append('precio_insumo', cleanPrecio || ''); // "9990"
+    if (payload.imagen) fd.append('imagen', payload.imagen);
     return fd;
   });
 
@@ -76,16 +88,19 @@ export default function Create() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Precio</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full border rounded-lg p-2"
-                value={data.precio_insumo}
-                onChange={(e) => setData('precio_insumo', e.target.value)}
-                placeholder="0.00"
-              />
+              <label className="block text-sm font-medium mb-1">Precio (CLP)</label>
+              {/* Input como texto para mostrar formato CLP mientras escribes */}
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="w-full border rounded-lg p-2 pl-7"
+                  value={formatCLP(data.precio_insumo)}
+                  onChange={(e) => setData('precio_insumo', onlyDigits(e.target.value))}
+                  placeholder="0"
+                />
+              </div>
               {errors.precio_insumo && <p className="text-red-600 text-sm mt-1">{errors.precio_insumo}</p>}
             </div>
           </div>
