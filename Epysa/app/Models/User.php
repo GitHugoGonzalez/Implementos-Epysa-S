@@ -2,47 +2,43 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // si usas sanctum
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    // ⚠️ usar la NUEVA conexión
+    protected $connection = 'newdb';
+
+    // ⚠️ tu tabla real
+    protected $table = 'Usuarios';
+
+    // ⚠️ PK real
+    protected $primaryKey = 'id_us';
+
+    // no hay created_at / updated_at en tu tabla
+    public $timestamps = false;
+
+    // si tu PK es autoincrement INT, esto está bien por defecto
+    protected $keyType = 'int';
+    public $incrementing = true;
+
     protected $fillable = [
         'name',
         'email',
         'password',
+        'rol',
+        'fk_idSucursal',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
-        'remember_token',
+        // 'remember_token',  // tu tabla no lo tiene
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    // si no usas verificación de email, no necesitas casts especiales aquí
 }
