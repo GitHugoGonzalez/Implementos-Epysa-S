@@ -88,20 +88,19 @@ export default function AuthenticatedLayout({ header, children }) {
 
                                 <Dropdown.Content>
                                     <Dropdown.Link href={route("profile.edit")}>
-                                        Profile
+                                        Mi Perfil
                                     </Dropdown.Link>
                                     <Dropdown.Link
                                         href={route("logout")}
                                         method="post"
                                         as="button"
                                     >
-                                        Log Out
+                                        Cerrar Sesión
                                     </Dropdown.Link>
                                 </Dropdown.Content>
                             </Dropdown>
                         </div>
 
-                        {/* Mobile toggle */}
                         <div className="-me-2 flex items-center sm:hidden">
                             <button
                                 onClick={() =>
@@ -191,7 +190,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route("profile.edit")}
                                 className="text-gray-800"
                             >
-                                Profile
+                                Mi Perfil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
@@ -199,7 +198,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 as="button"
                                 className="text-gray-800"
                             >
-                                Log Out
+                                Cerrar Sesión
                             </ResponsiveNavLink>
                         </div>
                     </div>

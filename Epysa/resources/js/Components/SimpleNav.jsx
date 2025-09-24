@@ -18,7 +18,6 @@ export default function SimpleNav() {
         <nav className="border-b border-blue-700 bg-blue-600 text-white">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-20 items-center justify-between">
-                    {/* Left: Logo + Links */}
                     <div className="flex items-center gap-6">
                         <div className="flex shrink-0 items-center">
                             <Link href="/">
@@ -30,7 +29,6 @@ export default function SimpleNav() {
                             </Link>
                         </div>
 
-                        {/* Desktop links */}
                         <div className="hidden items-center gap-2 sm:flex">
                             <NavLink
                                 href="/dashboard"
@@ -58,7 +56,6 @@ export default function SimpleNav() {
                         </div>
                     </div>
 
-                    {/* Right: User dropdown (desktop) */}
                     {user && (
                         <div className="hidden items-center sm:flex">
                             <Dropdown>
@@ -87,21 +84,20 @@ export default function SimpleNav() {
 
                                 <Dropdown.Content>
                                     <Dropdown.Link href={route("profile.edit")}>
-                                        Profile
+                                        Mi Perfil
                                     </Dropdown.Link>
                                     <Dropdown.Link
                                         href={route("logout")}
                                         method="post"
                                         as="button"
                                     >
-                                        Log Out
+                                        Cerrar Sesión
                                     </Dropdown.Link>
                                 </Dropdown.Content>
                             </Dropdown>
                         </div>
                     )}
 
-                    {/* Mobile toggle */}
                     <div className="-me-2 flex items-center sm:hidden">
                         <button
                             onClick={() =>
@@ -144,7 +140,6 @@ export default function SimpleNav() {
                 </div>
             </div>
 
-            {/* Mobile menu */}
             <div
                 className={
                     (showingNavigationDropdown ? "block" : "hidden") +
@@ -190,7 +185,7 @@ export default function SimpleNav() {
                                 href={route("profile.edit")}
                                 className="text-gray-800"
                             >
-                                Profile
+                                Mi Perfil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
@@ -198,7 +193,7 @@ export default function SimpleNav() {
                                 as="button"
                                 className="text-gray-800"
                             >
-                                Log Out
+                                Cerrar Sesión
                             </ResponsiveNavLink>
                         </div>
                     </div>
