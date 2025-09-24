@@ -1,6 +1,6 @@
 import React from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
-
+import SimpleNav from "@/Components/SimpleNav";
 export default function Index() {
     const { insumos } = usePage().props;
 
@@ -11,22 +11,24 @@ export default function Index() {
         }).format(num);
 
     return (
-        <div className="min-h-screen py-8 px-4 md:px-8">
+        
+        <div className="min-h-screen bg-gray-100 ">
             <Head title="Lista de Insumos" />
-            <div className="max-w-5xl mx-auto bg-white shadow rounded-2xl p-6">
+            <SimpleNav />
+            <div className="max-w-7xl mx-auto bg-white shadow rounded-2xl p-6 mt-7  ">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-semibold">Lista de Insumos</h1>
                     <Link
                         href={route("insumos.create")}
-                        className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:opacity-90"
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:opacity-90"
                     >
                         Agregar Insumo
                     </Link>
                 </div>
 
-                <table className="w-full border-collapse border border-gray-300 text-sm">
-                    <thead className="bg-gray-100">
-                        <tr>
+                <table className="w-full border-collapse border border-gray-300 text-sm ">
+                    <thead className="bg-blue-600 text-white rounded-lg ">
+                        <tr >
                             <th className="border p-2">ID</th>
                             <th className="border p-2">Imagen</th>
                             <th className="border p-2">Nombre</th>
@@ -36,10 +38,10 @@ export default function Index() {
                     </thead>
                     <tbody>
                         {insumos.length === 0 && (
-                            <tr>
+                            <tr >
                                 <td
                                     colSpan="5"
-                                    className="p-4 text-center text-gray-500"
+                                    className="p-4 text-center text-gray-500 "
                                 >
                                     No hay insumos aún
                                 </td>
@@ -48,7 +50,7 @@ export default function Index() {
                         {insumos.map((insumo) => (
                             <tr
                                 key={insumo.id_insumo}
-                                className="hover:bg-gray-50"
+                                className="hover:bg-gray-50 font-medium"
                             >
                                 <td className="border p-2 text-center">
                                     {insumo.id_insumo}
@@ -60,7 +62,7 @@ export default function Index() {
                                             insumo.id_insumo
                                         )}
                                         alt={insumo.nombre_insumo}
-                                        className="h-12 mx-auto object-cover rounded"
+                                        className="h-14 mx-auto object-cover rounded"
                                         onError={(e) => {
                                             e.target.style.display = "none";
                                         }} // si no hay imagen
