@@ -25,7 +25,7 @@ class InsumoController extends Controller
             'imagen'             => ['nullable', 'file', 'image', 'mimes:jpeg,png,webp,jpg', 'max:4096'],
         ]);
 
-        $insumo = new Insumo();
+        $insumo = new Insumo(); // el modelo debe tener protected $connection = 'newdb'
         $insumo->nombre_insumo      = $data['nombre_insumo'];
         $insumo->stock              = $data['stock'];
         $insumo->descripcion_insumo = $data['descripcion_insumo'] ?? null;
@@ -33,19 +33,25 @@ class InsumoController extends Controller
 
         if ($request->hasFile('imagen')) {
             $file = $request->file('imagen');
-            $insumo->imagen = file_get_contents($file->getRealPath());
+            $insumo->imagen      = file_get_contents($file->getRealPath());
             $insumo->imagen_mime = $file->getMimeType() ?: 'application/octet-stream';
         }
 
-        $insumo->save(); // usa connection del modelo (newdb)
+        $insumo->save();
 
         return redirect()->route('insumos.create')
             ->with('success', 'Insumo creado correctamente.');
     }
 
-    // Servir la imagen desde BLOB
-    public function imagen(Insumo $insumo)
+    // Servir la imagen desde BLOB (sin Route Model Binding, y seleccionando solo columnas necesarias)
+    public function imagen($id)
     {
+        // Fuerza conexión y trae SOLO columnas de imagen para no arrastrar demás datos
+        $insumo = Insumo::on('newdb')
+            ->select('imagen', 'imagen_mime')
+            ->where('id_insumo', $id)
+            ->firstOrFail();
+
         if (!$insumo->imagen) {
             abort(404);
         }
@@ -55,30 +61,27 @@ class InsumoController extends Controller
             ->header('Cache-Control', 'public, max-age=604800');
     }
 
+    // Listado (NO TOCAR el BLOB: ni seleccionarlo ni leer el atributo)
     public function index()
     {
-        $insumos = Insumo::select(
-            'id_insumo',
-            'nombre_insumo',
-            'stock',
-            'precio_insumo',
-            'descripcion_insumo'
-        )
-        ->orderBy('id_insumo', 'desc')
-        ->get()
-        ->map(function ($insumo) {
-            return [
-            'id_insumo'         => $insumo->id_insumo,
-            'nombre_insumo'     => $insumo->nombre_insumo,
-            'stock'             => $insumo->stock,
-            'precio_insumo'     => $insumo->precio_insumo,
-            'descripcion_insumo'=> $insumo->descripcion_insumo,
-            'imagen_url'        => $insumo->imagen ? route('insumos.imagen', $insumo->id_insumo) : null,
-        ];
-    });
+        $insumos = Insumo::on('newdb')
+            ->select('id_insumo', 'nombre_insumo', 'stock', 'precio_insumo', 'descripcion_insumo')
+            ->orderBy('id_insumo', 'desc')
+            ->get()
+            ->map(function ($i) {
+                return [
+                    'id_insumo'          => $i->id_insumo,
+                    'nombre_insumo'      => $i->nombre_insumo,
+                    'stock'              => $i->stock,
+                    'precio_insumo'      => $i->precio_insumo,
+                    'descripcion_insumo' => $i->descripcion_insumo,
+                    // Damos SIEMPRE la URL y dejamos que la ruta responda 404 si no hay imagen.
+                    'imagen_url'         => route('insumos.imagen', $i->id_insumo),
+                ];
+            });
 
-    return Inertia::render('Insumos/Index', [
-        'insumos' => $insumos,
-    ]);
-}
+        return Inertia::render('Insumos/Index', [
+            'insumos' => $insumos,
+        ]);
+    }
 }
