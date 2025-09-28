@@ -1,7 +1,7 @@
 import React from "react";
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
-
+import Modal from "@/Components/Modal";
 export default function Create() {
     const { insumos, sucursales, estados, canMarkUrgent } = usePage().props;
 
@@ -197,6 +197,32 @@ export default function Create() {
                     </form>
                 </div>
             </div>
+            <Modal show={processing} onClose={() => {}}>
+                <div className="p-6 text-center">
+                    <svg
+                        className="mx-auto h-10 w-10 animate-spin text-blue-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                        ></circle>
+                        <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                        ></path>
+                    </svg>
+                    <p className="mt-4 text-lg font-semibold text-blue-600">
+                        Enviando Solicitud...
+                    </p>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -1,40 +1,40 @@
 import React, { useRef, useState } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
-
+import Modal from "@/Components/Modal";
 export default function Create() {
-  const { data, setData, post, processing, errors, reset, transform } = useForm({
-    nombre_insumo: '',
-    stock: '',
-    descripcion_insumo: '',
-    precio_insumo: '', // guardaremos "9990" (sin formato) para CLP
-    imagen: null,
-  });
-   
+    const { data, setData, post, processing, errors, reset, transform } =
+        useForm({
+            nombre_insumo: "",
+            stock: "",
+            descripcion_insumo: "",
+            precio_insumo: "", // guardaremos "9990" (sin formato) para CLP
+            imagen: null,
+        });
 
     const [preview, setPreview] = useState(null);
     const fileRef = useRef(null);
 
-  // Helpers CLP
-  const onlyDigits = (str) => (str || '').toString().replace(/\D/g, '');
-  const formatCLP = (val) => {
-    const digits = onlyDigits(val);
-    if (!digits) return '';
-    return new Intl.NumberFormat('es-CL').format(Number(digits));
-  };
+    // Helpers CLP
+    const onlyDigits = (str) => (str || "").toString().replace(/\D/g, "");
+    const formatCLP = (val) => {
+        const digits = onlyDigits(val);
+        if (!digits) return "";
+        return new Intl.NumberFormat("es-CL").format(Number(digits));
+    };
 
-  // Enviar como FormData (necesario para archivo)
-  transform((payload) => {
-    const fd = new FormData();
-    // Enviamos precio_insumo sin formato (solo dígitos)
-    const cleanPrecio = onlyDigits(payload.precio_insumo);
-    fd.append('nombre_insumo', payload.nombre_insumo ?? '');
-    fd.append('stock', payload.stock ?? '');
-    fd.append('descripcion_insumo', payload.descripcion_insumo ?? '');
-    fd.append('precio_insumo', cleanPrecio || ''); // "9990"
-    if (payload.imagen) fd.append('imagen', payload.imagen);
-    return fd;
-  });
+    // Enviar como FormData (necesario para archivo)
+    transform((payload) => {
+        const fd = new FormData();
+        // Enviamos precio_insumo sin formato (solo dígitos)
+        const cleanPrecio = onlyDigits(payload.precio_insumo);
+        fd.append("nombre_insumo", payload.nombre_insumo ?? "");
+        fd.append("stock", payload.stock ?? "");
+        fd.append("descripcion_insumo", payload.descripcion_insumo ?? "");
+        fd.append("precio_insumo", cleanPrecio || ""); // "9990"
+        if (payload.imagen) fd.append("imagen", payload.imagen);
+        return fd;
+    });
 
     const handleFile = (e) => {
         const file = e.target.files?.[0] ?? null;
@@ -56,7 +56,7 @@ export default function Create() {
     return (
         <div className="min-h-screen bg-gray-100">
             <Head title="Agregar Insumo" />
-            <SimpleNav /> 
+            <SimpleNav />
             <div className="py-8 px-4 md:px-8">
                 <div className="mx-auto max-w-2xl rounded-2xl bg-white p-6 shadow">
                     <div className="mb-4 flex items-center justify-between">
@@ -207,6 +207,32 @@ export default function Create() {
                     </form>
                 </div>
             </div>
+            <Modal show={processing} onClose={() => {}}>
+                <div className="p-6 text-center">
+                    <svg
+                        className="mx-auto h-10 w-10 animate-spin text-blue-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                        ></circle>
+                        <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                        ></path>
+                    </svg>
+                    <p className="mt-4 text-lg font-semibold text-blue-600">
+                        Guardando…
+                    </p>
+                </div>
+            </Modal>
         </div>
     );
 }
