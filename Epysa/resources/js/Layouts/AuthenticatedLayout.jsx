@@ -57,6 +57,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Agregar Insumo
                                 </NavLink>
+                                <NavLink
+                                    href="/solicitudes/crear"
+                                    active={page.url === "/solicitudes/crear"}
+                                    className="!text-white hover:!text-blue-100 font-medium"
+                                >
+                                    Nueva Solicitud
+                                </NavLink>
                                 
                             </div>
                         </div>
