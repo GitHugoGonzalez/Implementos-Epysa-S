@@ -53,6 +53,13 @@ export default function SimpleNav() {
                             >
                                 Agregar Insumo
                             </NavLink>
+                            <NavLink
+                                href="/solicitudes/crear"
+                                active={page.url === "/solicitudes/crear"}
+                                className="!text-white hover:!text-blue-100 font-medium"
+                            >
+                                Nueva Solicitud
+                            </NavLink>
                         </div>
                     </div>
 
@@ -167,6 +174,13 @@ export default function SimpleNav() {
                         className="text-gray-800"
                     >
                         Agregar Insumo
+                    </ResponsiveNavLink>
+                    <ResponsiveNavLink
+                        href="/solicitudes/create"
+                        active={page.url === "/solicitudes/create"}
+                        className="!text-white hover:!text-blue-100 font-medium"
+                    >
+                        Nueva Solicitud
                     </ResponsiveNavLink>
                 </div>
 

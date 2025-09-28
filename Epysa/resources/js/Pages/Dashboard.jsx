@@ -1,5 +1,5 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 
 export default function Dashboard() {
     return (
@@ -11,16 +11,8 @@ export default function Dashboard() {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="space-y-4 p-6 text-gray-900">
                             <p>You're logged in!</p>
+
                            
-
-                            <Link
-  href={route('solicitudes.create')}
-  className="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:opacity-90"
->
-  📝 Nueva Solicitud
-</Link>
-
-
                         </div>
                     </div>
                 </div>
