@@ -44,7 +44,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
                                 <NavLink
                                     href="/insumos/index"
-                                    active={isPathActive("/insumos/index")}
+                                    active={page.url === "/insumos/index"}
                                     className="!text-white hover:!text-blue-100 font-medium"
                                 >
                                     Ver Insumos
@@ -57,13 +57,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Agregar Insumo
                                 </NavLink>
-                                <NavLink
-                                    href="/solicitudes/crear"
-                                    active={page.url === "/solicitudes/crear"}
-                                    className="!text-white hover:!text-blue-100 font-medium"
-                                >
-                                    Nueva Solicitud
-                                </NavLink>
+                                
                             </div>
                         </div>
 
@@ -169,7 +163,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href="/insumos"
-                            active={isPathActive("/insumos")}
+                            active={page.url === "/insumos"}
                             className="text-gray-800"
                         >
                             Ver Insumos
@@ -180,6 +174,14 @@ export default function AuthenticatedLayout({ header, children }) {
                             className="text-gray-800"
                         >
                             Agregar Insumo
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            href="/insumos/crear"
+                            active={page.url === "/insumos/crear"}
+                            className="text-gray-800"
+                        >
+                            Nueva Solicitud
                         </ResponsiveNavLink>
                     </div>
 

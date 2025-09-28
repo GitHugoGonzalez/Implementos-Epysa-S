@@ -162,8 +162,8 @@ export default function SimpleNav() {
                         Dashboard
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
-                        href="/insumos"
-                        active={route().current("insumos")}
+                        href="/insumos/index"
+                        active={page.url === "/insumos/index"}
                         className="text-gray-800"
                     >
                         Ver Insumos
@@ -176,9 +176,9 @@ export default function SimpleNav() {
                         Agregar Insumo
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
-                        href="/solicitudes/create"
-                        active={page.url === "/solicitudes/create"}
-                        className="!text-white hover:!text-blue-100 font-medium"
+                        href="/solicitudes/crear"
+                        active={page.url === "/solicitudes/crear"}
+                        className="text-gray-800"
                     >
                         Nueva Solicitud
                     </ResponsiveNavLink>
