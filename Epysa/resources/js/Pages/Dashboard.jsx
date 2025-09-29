@@ -9,7 +9,8 @@ import {
 const COLORS = ["#2563eb", "#16a34a", "#dc2626", "#f59e0b", "#7c3aed", "#0891b2", "#ef4444", "#10b981"];
 
 export default function Dashboard() {
-  const { charts } = usePage().props;
+  const { charts, auth } = usePage().props;
+  const isJefe = auth?.user?.rol === "jefe";
 
   return (
     <AuthenticatedLayout hideNav>
@@ -18,6 +19,18 @@ export default function Dashboard() {
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-8">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold">Resumen de Solicitudes</h1>
+
+            {/* Botón visible solo para 'jefe' */}
+            {isJefe && (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/admin/usuarios/crear"
+                  className="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:opacity-90"
+                >
+                  👤 Crear usuarios
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* 1) Serie diaria (últimos 30 días) */}

@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\SolicitudController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminUserController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -44,6 +45,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+    //rutas protegidas admin 
+    Route::get('/admin/usuarios/crear', [AdminUserController::class, 'create'])
+        ->name('admin.users.create');
+    Route::post('/admin/usuarios', [AdminUserController::class, 'store'])
+        ->name('admin.users.store');
 });
 
 require __DIR__.'/auth.php';
