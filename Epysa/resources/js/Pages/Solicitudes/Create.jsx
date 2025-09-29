@@ -2,15 +2,25 @@ import React from "react";
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
 import Modal from "@/Components/Modal";
+
 export default function Create() {
     const { insumos, sucursales, estados, canMarkUrgent } = usePage().props;
+
+    // IDs desde la tabla estado
+    const idPendiente =
+        estados.find((e) => e.desc_estado?.toLowerCase() === "pendiente")
+            ?.id_estado ?? "";
+    const idUrgente =
+        estados.find((e) => e.desc_estado?.toLowerCase() === "urgente")
+            ?.id_estado ?? "";
 
     const { data, setData, post, processing, errors, reset } = useForm({
         id_insumo: "",
         id_sucursal: "",
         cantidad: 1,
         fecha_sol: new Date().toISOString().substring(0, 10),
-        id_estado: "",
+        // ✅ por defecto "Solicitud normal" (Pendiente)
+        id_estado: idPendiente,
     });
 
     const submit = (e) => {
@@ -22,13 +32,13 @@ export default function Create() {
                     id_sucursal: "",
                     cantidad: 1,
                     fecha_sol: new Date().toISOString().substring(0, 10),
-                    id_estado: "",
+                    id_estado: idPendiente, // volver a normal
                 }),
         });
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 ">
+        <div className="min-h-screen bg-gray-100">
             <Head title="Crear Solicitud" />
             <SimpleNav />
             <div className="py-8 px-4 md:px-8">
@@ -146,7 +156,7 @@ export default function Create() {
                             </div>
                         </div>
 
-                        {/* Estado (Urgente bloqueado para no-admin) */}
+                        {/* Estado: default normal; Urgente solo jefe */}
                         <div>
                             <label className="block text-sm font-medium mb-1">
                                 Estado
@@ -158,19 +168,20 @@ export default function Create() {
                                     setData("id_estado", e.target.value)
                                 }
                             >
-                                <option value="">Selecciona estado…</option>
-                                {estados.map((estado) => (
-                                    <option
-                                        key={estado.id_estado}
-                                        value={estado.id_estado}
-                                        disabled={
-                                            estado.desc_estado === "Urgente" &&
-                                            !canMarkUrgent
-                                        }
-                                    >
-                                        {estado.desc_estado}
+                                {/* Solo mostramos 2 opciones, mapeando a la tabla */}
+                                {idPendiente && (
+                                    <option value={idPendiente}>
+                                        Solicitud normal
                                     </option>
-                                ))}
+                                )}
+                                {idUrgente && (
+                                    <option
+                                        value={idUrgente}
+                                        disabled={!canMarkUrgent}
+                                    >
+                                        Solicitud urgente
+                                    </option>
+                                )}
                             </select>
                             {errors.id_estado && (
                                 <p className="text-red-600 text-sm mt-1">
@@ -179,8 +190,8 @@ export default function Create() {
                             )}
                             {!canMarkUrgent && (
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Solo administradores pueden seleccionar{" "}
-                                    <b>Urgente</b>.
+                                    Solo el <b>jefe</b> puede seleccionar{" "}
+                                    <b>Solicitud urgente</b>.
                                 </p>
                             )}
                         </div>
@@ -197,6 +208,7 @@ export default function Create() {
                     </form>
                 </div>
             </div>
+
             <Modal show={processing} onClose={() => {}}>
                 <div className="p-6 text-center">
                     <svg

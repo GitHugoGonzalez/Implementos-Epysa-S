@@ -8,7 +8,8 @@ use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\SolicitudController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminUserController;
-
+use App\Http\Controllers\SolicitudAprobadaController;
+use App\Http\Controllers\EncargadoSolicitudesController;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -45,6 +46,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+    //Solicitudes aprobadas jefe
+    Route::get('/jefe/solicitudes-aprobadas', [SolicitudAprobadaController::class, 'index'])
+        ->name('jefe.solicitudes.aprobadas');
+        
+    Route::patch('/jefe/solicitudes/{id}/aprobar', [SolicitudAprobadaController::class, 'aprobar'])
+        ->name('jefe.solicitudes.aprobar');
+
+    Route::patch('/jefe/solicitudes/{id}/rechazar', [SolicitudAprobadaController::class, 'rechazar'])
+        ->name('jefe.solicitudes.rechazar');
 
     //rutas protegidas admin 
     Route::get('/admin/usuarios/crear', [AdminUserController::class, 'create'])

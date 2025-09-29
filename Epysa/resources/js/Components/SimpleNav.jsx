@@ -65,7 +65,9 @@ export default function SimpleNav() {
                                 <div className="flex items-center gap-2">
                                     <NavLink
                                         href="/admin/usuarios/crear"
-                                        active={page.url === "/admin/usuarios/crear"}
+                                        active={
+                                            page.url === "/admin/usuarios/crear"
+                                        }
                                         className="!text-white hover:!text-blue-100 font-medium"
                                     >
                                         Crear usuarios
