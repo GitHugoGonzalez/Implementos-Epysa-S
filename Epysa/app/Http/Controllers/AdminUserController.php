@@ -14,7 +14,7 @@ class AdminUserController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
-        if (!$user || $user->rol !== 'jefe') {
+        if (!$user || strtolower($user->rol) !== 'jefe') {
             abort(403, 'No tienes permisos para acceder a esta sección.');
         }
 
@@ -35,7 +35,7 @@ class AdminUserController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (!$user || $user->rol !== 'jefe') {
+        if (!$user || strtolower($user->rol) !== 'jefe') {
             abort(403, 'No tienes permisos para realizar esta acción.');
         }
 

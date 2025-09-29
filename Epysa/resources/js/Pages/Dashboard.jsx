@@ -10,7 +10,7 @@ const COLORS = ["#2563eb", "#16a34a", "#dc2626", "#f59e0b", "#7c3aed", "#0891b2"
 
 export default function Dashboard() {
   const { charts, auth } = usePage().props;
-  const isJefe = auth?.user?.rol === "jefe";
+  const isJefe = auth?.user?.rol === "jefe" || auth?.user?.rol === "Jefe";
 
   return (
     <AuthenticatedLayout hideNav>
