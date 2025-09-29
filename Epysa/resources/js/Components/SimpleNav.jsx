@@ -10,7 +10,8 @@ export default function SimpleNav() {
     const user = page?.props?.auth?.user ?? null;
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
-
+    const { auth } = usePage().props;
+    const isJefe = auth?.user?.rol === "jefe" || auth?.user?.rol === "Jefe";
     const isPathActive = (path) =>
         page.url === path || page.url.startsWith(path + "/");
 
@@ -60,6 +61,17 @@ export default function SimpleNav() {
                             >
                                 Nueva Solicitud
                             </NavLink>
+                            {isJefe && (
+                                <div className="flex items-center gap-2">
+                                    <NavLink
+                                        href="/admin/usuarios/crear"
+                                        active={page.url === "/admin/usuarios/crear"}
+                                        className="!text-white hover:!text-blue-100 font-medium"
+                                    >
+                                        Crear usuarios
+                                    </NavLink>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -182,6 +194,17 @@ export default function SimpleNav() {
                     >
                         Nueva Solicitud
                     </ResponsiveNavLink>
+                    {isJefe && (
+                        <div className="flex items-center gap-2">
+                            <ResponsiveNavLink
+                                href="/admin/usuarios/crear"
+                                active={page.url === "/admin/usuarios/crear"}
+                                className="text-gray-800"
+                            >
+                                Crear usuarios
+                            </ResponsiveNavLink>
+                        </div>
+                    )}
                 </div>
 
                 {user && (

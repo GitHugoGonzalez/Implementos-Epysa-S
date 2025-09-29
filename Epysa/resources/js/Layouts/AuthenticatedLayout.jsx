@@ -11,7 +11,8 @@ export default function AuthenticatedLayout({ header, children }) {
     const user = page.props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
-
+    const { auth } = usePage().props;
+    const isJefe = auth?.user?.rol === "jefe" || auth?.user?.rol === "Jefe";
     const isPathActive = (path) =>
         page.url === path || page.url.startsWith(path + "/");
 
@@ -64,7 +65,17 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Nueva Solicitud
                                 </NavLink>
-                                
+                                {isJefe && (
+                                    <div className="flex items-center gap-2">
+                                        <NavLink
+                                            href="/admin/usuarios/crear"
+                                            active={page.url === "/admin/usuarios/crear"}
+                                            className="!text-white hover:!text-blue-100 font-medium"
+                                        >
+                                             Crear usuarios
+                                        </NavLink>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -190,6 +201,17 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Nueva Solicitud
                         </ResponsiveNavLink>
+                        {isJefe && (
+                            <div className="flex items-center gap-2">
+                                <ResponsiveNavLink
+                                    href="/admin/usuarios/crear"
+                                    active={page.url === "/admin/usuarios/crear"}
+                                    className="text-gray-800"
+                                >
+                                     Crear usuarios
+                                </ResponsiveNavLink>
+                            </div>
+                        )}
                     </div>
 
                     <div className="border-t border-blue-200 bg-white pb-1 pt-4">

@@ -20,17 +20,8 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold">Resumen de Solicitudes</h1>
 
-            {/* Botón visible solo para 'jefe' */}
-            {isJefe && (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/admin/usuarios/crear"
-                  className="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:opacity-90"
-                >
-                  👤 Crear usuarios
-                </Link>
-              </div>
-            )}
+            
+           
           </div>
 
           {/* 1) Serie diaria (últimos 30 días) */}
