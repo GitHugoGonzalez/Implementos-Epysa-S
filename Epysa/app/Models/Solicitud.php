@@ -17,7 +17,7 @@ class Solicitud extends Model
         'id_sucursal',
         'sucursal_nombre',
         'id_insumo',
-        'insumo_nombre',   // 👈 aquí el nombre correcto
+        'insumo_nombre',
         'cantidad',
         'fecha_sol',
         'id_estado',

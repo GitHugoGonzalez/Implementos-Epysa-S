@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\SolicitudController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -16,9 +17,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+
 
 Route::middleware('auth')->group(function () {
     // Perfil
@@ -32,9 +31,6 @@ Route::middleware('auth')->group(function () {
     // Opción A (tu ruta actual):
     Route::get('/insumos/index', [InsumoController::class, 'index'])->name('insumos.index');
 
-    // Opción B (más estándar) — si la usas, cambia tus links a "/insumos":
-    // Route::get('/insumos', [InsumoController::class, 'index'])->name('insumos.index');
-
     Route::post('/insumos', [InsumoController::class, 'store'])->name('insumos.store');
 
     // Imagen SIN model binding (ID crudo)
@@ -45,6 +41,9 @@ Route::middleware('auth')->group(function () {
     // SOLICITUDES
     Route::get('/solicitudes/crear', [SolicitudController::class, 'create'])->name('solicitudes.create');
     Route::post('/solicitudes', [SolicitudController::class, 'store'])->name('solicitudes.store');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 });
 
 require __DIR__.'/auth.php';

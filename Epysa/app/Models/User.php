@@ -37,8 +37,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
-        // 'remember_token',  // tu tabla no lo tiene
+        
     ];
 
-    // si no usas verificación de email, no necesitas casts especiales aquí
 }
