@@ -229,7 +229,7 @@ export default function Create() {
                         ></path>
                     </svg>
                     <p className="mt-4 text-lg font-semibold text-blue-600">
-                        Guardando…
+                        Insumo agregado exitosamente...
                     </p>
                 </div>
             </Modal>

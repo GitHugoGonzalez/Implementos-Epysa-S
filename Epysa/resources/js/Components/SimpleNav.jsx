@@ -19,7 +19,7 @@ export default function SimpleNav() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-20 items-center justify-between">
                     <div className="flex items-center gap-6">
-                        <div className="flex shrink-0 items-center">
+                        <div className="flex items-center gap-4">
                             <Link href="/">
                                 <img
                                     src="/imagenes/logo_header.svg"
