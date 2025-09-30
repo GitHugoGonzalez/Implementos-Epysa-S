@@ -95,7 +95,8 @@ export default function SolicitudesAprobadas() {
                                                     className="px-3 py-1 rounded bg-red-600 text-white hover:opacity-90"
                                                     title="Marcar como Rechazada"
                                                 >
-                                                    Rechazar
+                                                    Rechazar 
+                                                    
                                                 </button>
                                             </div>
                                         </td>
