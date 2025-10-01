@@ -7,42 +7,39 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class SolicitudAprobadaController extends Controller
 {
+    /**
+     * Muestra las solicitudes según el rol:
+     * - Encargado: ve Pendientes
+     * - Jefe: ve Aprobadas por Encargado
+     */
     public function index(Request $request)
     {
         $user = Auth::user();
+        if (!$user) abort(401);
 
-        // Solo Jefe
-        if (!$user || strtolower(trim($user->rol ?? '')) !== 'jefe') {
+        $rol = strtolower(trim($user->rol ?? ''));
+
+        if (!in_array($rol, ['encargado', 'jefe'], true)) {
             abort(403, 'No tienes permisos para acceder a esta sección.');
         }
 
         $conn = DB::connection('newdb');
 
-        // IDs de estados
-        $idAprobada  = $conn->table('estado')->where('desc_estado', 'Aprobada')->value('id_estado');
-        $idRechazada = $conn->table('estado')->where('desc_estado', 'Rechazada')->value('id_estado');
-
-        // Filtro opcional ?estado=aprobada|rechazada|todas (default: todas)
-        $filtro = strtolower($request->query('estado', 'todas'));
-        $ids = [];
-        if ($filtro === 'aprobada' && $idAprobada) {
-            $ids = [$idAprobada];
-        } elseif ($filtro === 'rechazada' && $idRechazada) {
-            $ids = [$idRechazada];
-        } else {
-            // todas (aprobada + rechazada)
-            $ids = array_values(array_filter([$idAprobada, $idRechazada], fn($v) => !is_null($v)));
+        // Estados por rol
+        if ($rol === 'encargado') {
+            $estadoFiltro = $conn->table('estado')->where('desc_estado', 'Pendiente')->value('id_estado');
+        } else { // jefe
+            $estadoFiltro = $conn->table('estado')->where('desc_estado', 'Aprobada Encargado')->value('id_estado');
         }
 
         $solicitudes = Solicitud::on('newdb')
             ->from('solicitudes as s')
             ->leftJoin('estado as e', 'e.id_estado', '=', 's.id_estado')
-            ->when(!empty($ids), function ($q) use ($ids) {
-                $q->whereIn('s.id_estado', $ids);
-            })
+            ->when($estadoFiltro, fn($q) => $q->where('s.id_estado', $estadoFiltro))
             ->orderBy('s.fecha_sol', 'desc')
             ->get([
                 's.id_solicitud',
@@ -55,48 +52,106 @@ class SolicitudAprobadaController extends Controller
                 DB::raw('e.desc_estado as estado'),
             ]);
 
-        return Inertia::render('Jefe/SolicitudesAprobadas', [
+        return Inertia::render('Solicitudes/Aprobar', [
             'solicitudes' => $solicitudes,
-            'filtro'      => $filtro,
-            'debug'       => [
-                'idAprobada' => $idAprobada,
-                'idRechazada'=> $idRechazada,
-                'total'      => $solicitudes->count(),
-            ],
+            'rol'         => $rol,
         ]);
     }
 
+    /**
+     * Aprobar según rol:
+     * - Encargado: Pendiente -> Aprobada Encargado
+     * - Jefe: Aprobada Encargado -> Aprobada Jefe
+     */
     public function aprobar($id)
     {
         $user = Auth::user();
-        if (!$user || strtolower(trim($user->rol ?? '')) !== 'jefe') {
+        if (!$user) abort(401);
+
+        $rol = strtolower(trim($user->rol ?? ''));
+        if (!in_array($rol, ['encargado', 'jefe'], true)) {
             abort(403, 'No autorizado.');
         }
 
-        $conn = DB::connection('newdb');
-        $idAprobada = $conn->table('estado')->where('desc_estado','Aprobada')->value('id_estado');
+        return DB::connection('newdb')->transaction(function () use ($id, $rol, $user) {
+            $conn = DB::connection('newdb');
 
-        $sol = Solicitud::on('newdb')->findOrFail($id);
-        $sol->id_estado = (int) $idAprobada;
-        $sol->save();
+            // IDs de estado que vamos a usar
+            $idPendiente       = $conn->table('estado')->where('desc_estado','Pendiente')->value('id_estado');
+            $idAprobEncargado  = $conn->table('estado')->where('desc_estado','Aprobada Encargado')->value('id_estado');
+            $idAprobJefe       = $conn->table('estado')->where('desc_estado','Aprobada Jefe')->value('id_estado');
 
-        return to_route('jefe.solicitudes.aprobadas')->with('success', 'Solicitud aprobada.');
+            $sol = Solicitud::on('newdb')->lockForUpdate()->findOrFail($id);
+
+            if ($rol === 'encargado') {
+                if ((int)$sol->id_estado !== (int)$idPendiente) {
+                    abort(422, 'La solicitud no está en estado Pendiente.');
+                }
+
+                $sol->id_estado = (int)$idAprobEncargado;
+                // opcional: marca quién y cuándo aprobó
+                $sol->encargado_aprobado_por = $user->id_us ?? null;
+                $sol->encargado_aprobado_at  = Carbon::now();
+            } else { // jefe
+                if ((int)$sol->id_estado !== (int)$idAprobEncargado) {
+                    abort(422, 'La solicitud no está Aprobada por Encargado.');
+                }
+
+                $sol->id_estado        = (int)$idAprobJefe;
+                $sol->jefe_aprobado_por= $user->id_us ?? null;
+                $sol->jefe_aprobado_at = Carbon::now();
+                // si quieres, aquí puedes setear confirmado_at/eta/deadline (lo dejamos fuera para centrarnos en el flujo)
+            }
+
+            $sol->save();
+
+            return back()->with('success', 'Solicitud aprobada correctamente.');
+        });
     }
 
-    public function rechazar($id)
+    /**
+     * Rechazar según rol:
+     * - Encargado: Pendiente -> Rechazada Encargado
+     * - Jefe: Aprobada Encargado -> Rechazada Jefe
+     */
+    public function rechazar($id, Request $request)
     {
         $user = Auth::user();
-        if (!$user || strtolower(trim($user->rol ?? '')) !== 'jefe') {
+        if (!$user) abort(401);
+
+        $rol = strtolower(trim($user->rol ?? ''));
+        if (!in_array($rol, ['encargado', 'jefe'], true)) {
             abort(403, 'No autorizado.');
         }
 
-        $conn = DB::connection('newdb');
-        $idRechazada = $conn->table('estado')->where('desc_estado','Rechazada')->value('id_estado');
+        $motivo = $request->input('motivo');
 
-        $sol = Solicitud::on('newdb')->findOrFail($id);
-        $sol->id_estado = (int) $idRechazada;
-        $sol->save();
+        return DB::connection('newdb')->transaction(function () use ($id, $rol, $motivo, $user) {
+            $conn = DB::connection('newdb');
 
-        return to_route('jefe.solicitudes.aprobadas')->with('success', 'Solicitud rechazada.');
+            $idPendiente        = $conn->table('estado')->where('desc_estado','Pendiente')->value('id_estado');
+            $idAprobEncargado   = $conn->table('estado')->where('desc_estado','Aprobada Encargado')->value('id_estado');
+            $idRechEncargado    = $conn->table('estado')->where('desc_estado','Rechazada Encargado')->value('id_estado');
+            $idRechJefe         = $conn->table('estado')->where('desc_estado','Rechazada Jefe')->value('id_estado');
+
+            $sol = Solicitud::on('newdb')->lockForUpdate()->findOrFail($id);
+
+            if ($rol === 'encargado') {
+                if ((int)$sol->id_estado !== (int)$idPendiente) {
+                    abort(422, 'La solicitud no está en estado Pendiente.');
+                }
+                $sol->id_estado = (int)$idRechEncargado;
+            } else { // jefe
+                if ((int)$sol->id_estado !== (int)$idAprobEncargado) {
+                    abort(422, 'La solicitud no está Aprobada por Encargado.');
+                }
+                $sol->id_estado = (int)$idRechJefe;
+                $sol->jefe_rechazo_motivo = $motivo;
+            }
+
+            $sol->save();
+
+            return back()->with('success', 'Solicitud rechazada.');
+        });
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\SolicitudAprobadaController;
 use App\Http\Controllers\EncargadoSolicitudesController;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -48,14 +49,11 @@ Route::middleware('auth')->group(function () {
     ->name('dashboard');
 
     //Solicitudes aprobadas jefe
-    Route::get('/jefe/solicitudes-aprobadas', [SolicitudAprobadaController::class, 'index'])
-        ->name('jefe.solicitudes.aprobadas');
-        
-    Route::patch('/jefe/solicitudes/{id}/aprobar', [SolicitudAprobadaController::class, 'aprobar'])
-        ->name('jefe.solicitudes.aprobar');
+     Route::get('/aprobaciones', [SolicitudAprobadaController::class, 'index'])->name('aprobaciones.index');
 
-    Route::patch('/jefe/solicitudes/{id}/rechazar', [SolicitudAprobadaController::class, 'rechazar'])
-        ->name('jefe.solicitudes.rechazar');
+    // Acciones
+    Route::post('/aprobaciones/{id}/aprobar', [SolicitudAprobadaController::class, 'aprobar'])->name('aprobaciones.aprobar');
+    Route::post('/aprobaciones/{id}/rechazar', [SolicitudAprobadaController::class, 'rechazar'])->name('aprobaciones.rechazar');
 
     //rutas protegidas admin 
     Route::get('/admin/usuarios/crear', [AdminUserController::class, 'create'])

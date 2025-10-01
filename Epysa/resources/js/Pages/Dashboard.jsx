@@ -41,23 +41,24 @@ export default function Dashboard() {
                             Resumen de Solicitudes
                         </h1>
                         {isEncargado && (
-                            <Link
-                                href="/encargado/solicitudes-operarios"
-                                className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:opacity-90"
-                            >
-                                Ver solicitudes de operarios
-                            </Link>
-                        )}
-                        {isJefe && (
-                            <div className="flex gap-2">
-                                <Link
-                                    href="/jefe/solicitudes-aprobadas"
-                                    className="px-3 py-2 bg-[#009579] text-white rounded-lg hover:opacity-90"
-                                >
-                                    Ver Solicitudes
-                                </Link>
-                            </div>
-                        )}
+  <Link
+    href={route('aprobaciones.index')}
+    className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:opacity-90"
+  >
+    Ver solicitudes de operarios
+  </Link>
+)}
+
+{isJefe && (
+  <div className="flex gap-2">
+    <Link
+      href={route('aprobaciones.index')}
+      className="px-3 py-2 bg-[#009579] text-white rounded-lg hover:opacity-90"
+    >
+      Ver solicitudes
+    </Link>
+  </div>
+)}
                     </div>
 
                     {/* 1) Serie diaria (últimos 30 días) */}
