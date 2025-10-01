@@ -8,6 +8,7 @@ export default function Register() {
         email: "",
         password: "",
         password_confirmation: "",
+        rol: "operario", // 👈 nuevo
     });
 
     const submit = (e) => {
@@ -20,10 +21,7 @@ export default function Register() {
     return (
         <GuestLayout bare>
             <Head title="Crear cuenta" />
-
-            {/* Split screen como en el login */}
             <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-                {/* Izquierda: imagen full-bleed */}
                 <div className="hidden md:block">
                     <img
                         src="/imagenes/implementos.jpg"
@@ -32,7 +30,6 @@ export default function Register() {
                     />
                 </div>
 
-                {/* Derecha: panel sin card */}
                 <div className="bg-white flex items-center justify-center px-6 md:px-10">
                     <div className="w-full max-w-sm">
                         <h1 className="text-[32px] md:text-[36px] font-black text-gray-900 text-center leading-tight">
@@ -93,6 +90,40 @@ export default function Register() {
                                         {errors.email}
                                     </p>
                                 )}
+                            </div>
+
+                            {/* Rol */}
+                            <div>
+                                <label
+                                    htmlFor="rol"
+                                    className="block text-sm font-semibold text-gray-700 mb-1"
+                                >
+                                    Rol
+                                </label>
+                                <select
+                                    id="rol"
+                                    name="rol"
+                                    value={data.rol}
+                                    onChange={(e) =>
+                                        setData("rol", e.target.value)
+                                    }
+                                    className="w-full rounded-md bg-gray-100 border border-gray-200 focus:border-gray-400 focus:ring-0 px-4 py-2.5 text-sm"
+                                    required
+                                >
+                                    <option value="operario">Operario</option>
+                                    <option value="encargado">Encargado</option>
+                                    <option value="jefe">Jefe</option>
+                                    <option value="logistica">Logística</option>
+                                </select>
+                                {errors.rol && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {errors.rol}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Este rol controla los permisos en la
+                                    plataforma.
+                                </p>
                             </div>
 
                             {/* Password */}
