@@ -10,7 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\SolicitudAprobadaController;
 use App\Http\Controllers\EncargadoSolicitudesController;
-
+use App\Http\Controllers\LogisticaController;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -60,6 +60,15 @@ Route::middleware('auth')->group(function () {
         ->name('admin.users.create');
     Route::post('/admin/usuarios', [AdminUserController::class, 'store'])
         ->name('admin.users.store');
+
+
+    //LOGISTICA
+    Route::get('/logistica', [LogisticaController::class, 'index'])->name('logistica.index');
+
+    Route::get('/solicitudes/{id}/logistica', [LogisticaController::class, 'edit'])->name('sol.logistica.edit');
+
+    Route::post('/solicitudes/{id}/logistica/aprobar', [LogisticaController::class, 'aprobar'])->name('sol.logistica.aprobar');
+    Route::post('/solicitudes/{id}/logistica/rechazar', [LogisticaController::class, 'rechazar'])->name('sol.logistica.rechazar');
 });
 
 require __DIR__.'/auth.php';

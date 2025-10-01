@@ -59,6 +59,17 @@ export default function Dashboard() {
     </Link>
   </div>
 )}
+
+
+ {/* Botón visible solo para logística */}
+  {usePage().props.auth.user?.rol?.toLowerCase() === "logistica" && (
+    <Link
+      href={route("logistica.index")}
+      className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:opacity-90"
+    >
+      Ir a Logística
+    </Link>
+  )}
                     </div>
 
                     {/* 1) Serie diaria (últimos 30 días) */}
