@@ -1,24 +1,34 @@
 // resources/js/Components/SimpleNav.jsx
-import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import { Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function SimpleNav() {
     const page = usePage();
     const user = page?.props?.auth?.user ?? null;
+
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+        useState(false); // mobile menu
+    const [isSideOpen, setIsSideOpen] = useState(false); // side menu (drawer)
+
     const { auth } = usePage().props;
     const isJefe = auth?.user?.rol === "jefe" || auth?.user?.rol === "Jefe";
     const isPathActive = (path) =>
         page.url === path || page.url.startsWith(path + "/");
 
+    // Cerrar el drawer con ESC
+    useEffect(() => {
+        const onKey = (e) => e.key === "Escape" && setIsSideOpen(false);
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, []);
+
     return (
         <nav className="border-b border-blue-700 bg-blue-600 text-white">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-20 items-center justify-between">
+                    {/* Logo + links principales */}
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-4">
                             <Link href="/">
@@ -41,7 +51,7 @@ export default function SimpleNav() {
 
                             <NavLink
                                 href="/insumos/index"
-                                active={page.url === "/insumos/index"}
+                                active={isPathActive("/insumos/index")}
                                 className="!text-white hover:!text-blue-100 font-medium"
                             >
                                 Ver Insumos
@@ -49,76 +59,52 @@ export default function SimpleNav() {
 
                             <NavLink
                                 href="/insumos/crear"
-                                active={page.url === "/insumos/crear"}
+                                active={isPathActive("/insumos/crear")}
                                 className="!text-white hover:!text-blue-100 font-medium"
                             >
                                 Agregar Insumo
                             </NavLink>
+
                             <NavLink
                                 href="/solicitudes/crear"
-                                active={page.url === "/solicitudes/crear"}
+                                active={isPathActive("/solicitudes/crear")}
                                 className="!text-white hover:!text-blue-100 font-medium"
                             >
                                 Nueva Solicitud
                             </NavLink>
-                            {isJefe && (
-                                <div className="flex items-center gap-2">
-                                    <NavLink
-                                        href="/admin/usuarios/crear"
-                                        active={
-                                            page.url === "/admin/usuarios/crear"
-                                        }
-                                        className="!text-white hover:!text-blue-100 font-medium"
-                                    >
-                                        Crear usuarios
-                                    </NavLink>
-                                </div>
-                            )}
+
+                            
                         </div>
                     </div>
 
+                    {/* Botón que abre el side menu (en desktop) */}
                     {user && (
                         <div className="hidden items-center sm:flex">
-                            <Dropdown>
-                                <Dropdown.Trigger>
-                                    <span className="inline-flex rounded-md">
-                                        <button
-                                            type="button"
-                                            className="inline-flex items-center rounded-md border border-transparent bg-transparent px-3 py-2 text-lg font-medium leading-4 text-white transition hover:bg-blue-500 focus:outline-none"
-                                        >
-                                            {user.name}
-                                            <svg
-                                                className="-me-0.5 ms-2 h-4 w-4"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 20 20"
-                                                fill="currentColor"
-                                            >
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </span>
-                                </Dropdown.Trigger>
-
-                                <Dropdown.Content>
-                                    <Dropdown.Link href={route("profile.edit")}>
-                                        Mi Perfil
-                                    </Dropdown.Link>
-                                    <Dropdown.Link
-                                        href={route("logout")}
-                                        method="post"
-                                        as="button"
-                                    >
-                                        Cerrar Sesión
-                                    </Dropdown.Link>
-                                </Dropdown.Content>
-                            </Dropdown>
+                            <button
+                                type="button"
+                                onClick={() => setIsSideOpen(true)}
+                                className="inline-flex items-center rounded-md bg-transparent px-3 py-2 text-lg font-medium leading-4 text-white transition hover:bg-blue-500 focus:outline-none"
+                                aria-label="Abrir panel de usuario"
+                                aria-expanded={isSideOpen}
+                            >
+                                {user.name}
+                                <svg
+                                    className="-me-0.5 ms-2 h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            </button>
                         </div>
                     )}
 
+                    {/* Botón Hamburguesa (mobile) */}
                     <div className="-me-2 flex items-center sm:hidden">
                         <button
                             onClick={() =>
@@ -161,6 +147,7 @@ export default function SimpleNav() {
                 </div>
             </div>
 
+            {/* Menú responsive (lista simple en mobile) */}
             <div
                 className={
                     (showingNavigationDropdown ? "block" : "hidden") +
@@ -177,35 +164,33 @@ export default function SimpleNav() {
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         href="/insumos/index"
-                        active={page.url === "/insumos/index"}
+                        active={isPathActive("/insumos/index")}
                         className="text-gray-800"
                     >
                         Ver Insumos
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         href="/insumos/crear"
-                        active={page.url === "/insumos/crear"}
+                        active={isPathActive("/insumos/crear")}
                         className="text-gray-800"
                     >
                         Agregar Insumo
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         href="/solicitudes/crear"
-                        active={page.url === "/solicitudes/crear"}
+                        active={isPathActive("/solicitudes/crear")}
                         className="text-gray-800"
                     >
                         Nueva Solicitud
                     </ResponsiveNavLink>
                     {isJefe && (
-                        <div className="flex items-center gap-2">
-                            <ResponsiveNavLink
-                                href="/admin/usuarios/crear"
-                                active={page.url === "/admin/usuarios/crear"}
-                                className="text-gray-800"
-                            >
-                                Crear usuarios
-                            </ResponsiveNavLink>
-                        </div>
+                        <ResponsiveNavLink
+                            href="/admin/usuarios/crear"
+                            active={isPathActive("/admin/usuarios/crear")}
+                            className="text-gray-800"
+                        >
+                            Crear usuarios
+                        </ResponsiveNavLink>
                     )}
                 </div>
 
@@ -226,6 +211,14 @@ export default function SimpleNav() {
                             >
                                 Mi Perfil
                             </ResponsiveNavLink>
+                            {isJefe && (
+                                <ResponsiveNavLink
+                                    href="/admin/usuarios"
+                                    className="text-gray-800"
+                                >
+                                    Gestionar usuarios
+                                </ResponsiveNavLink>
+                            )}
                             <ResponsiveNavLink
                                 method="post"
                                 href={route("logout")}
@@ -238,6 +231,108 @@ export default function SimpleNav() {
                     </div>
                 )}
             </div>
+
+            {/* ==== SIDE MENU (Drawer) para usuario ==== */}
+            {user && (
+                <>
+                    {/* Overlay */}
+                    <div
+                        className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${
+                            isSideOpen
+                                ? "opacity-100"
+                                : "pointer-events-none opacity-0"
+                        }`}
+                        onClick={() => setIsSideOpen(false)}
+                        aria-hidden={!isSideOpen}
+                    />
+
+                    {/* Drawer */}
+                    <aside
+                        className={`fixed right-0 top-0 z-50 h-full w-72 transform bg-white shadow-xl transition-transform duration-300 ${
+                            isSideOpen ? "translate-x-0" : "translate-x-full"
+                        }`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Menú de usuario"
+                    >
+                        {/* Header del drawer */}
+                        <div className="flex items-center justify-between border-b px-4 py-4">
+                            <div>
+                                <p className="text-sm text-gray-500">
+                                    Sesión iniciada como
+                                </p>
+                                <p className="text-base font-semibold text-gray-900">
+                                    {user.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {user.email}
+                                </p>
+                            </div>
+                            <button
+                                className="rounded p-2 text-gray-500 hover:bg-gray-100"
+                                onClick={() => setIsSideOpen(false)}
+                                aria-label="Cerrar panel"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Items del drawer */}
+                        <div className="px-2 py-3">
+                            <Link
+                                href={route("profile.edit")}
+                                className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
+                                onClick={() => setIsSideOpen(false)}
+                            >
+                                Mi Perfil
+                            </Link>
+
+                            {isJefe && (
+                                <>
+                                    <Link
+                                        href="/admin/usuarios/crear"
+                                        className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsSideOpen(false)}
+                                    >
+                                        Crear usuario
+                                    </Link>
+
+                                    <Link
+                                        href="/admin/usuarios"
+                                        className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsSideOpen(false)}
+                                    >
+                                        Gestionar usuarios
+                                    </Link>
+                                </>
+                            )}
+
+                            <Link
+                                href={route("logout")}
+                                method="post"
+                                as="button"
+                                className="mt-2 w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                                onClick={() => setIsSideOpen(false)}
+                            >
+                                Cerrar sesión
+                            </Link>
+                        </div>
+                    </aside>
+                </>
+            )}
         </nav>
     );
 }

@@ -79,7 +79,7 @@ Route::middleware('auth')->group(function () {
 
 
     Route::get('/test-email', function () {
-        Mail::to('ba.ventura@duocuc.cl')->send(new TestMail());
+        Mail::to('cam.chavez@duocuc.cl')->send(new TestMail());
     return 'Correo enviado ✅';
 });
 

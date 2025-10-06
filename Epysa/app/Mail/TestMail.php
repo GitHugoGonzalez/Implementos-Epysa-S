@@ -16,5 +16,4 @@ class TestMail extends Mailable
                     ->view('emails.test');
     }
 
-
 }   

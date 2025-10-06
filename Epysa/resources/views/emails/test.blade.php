@@ -6,8 +6,7 @@
 </head>
 <body>
     <h2>¡Hola!</h2>
-    <p>Jefecito lo logre mire :D
-
+    <p>Puto
     </p>
 </body>
 </html>
