@@ -76,13 +76,14 @@ Route::middleware('auth')->group(function () {
 
 
 
+    // Listado de usuarios (solo jefe y logistica)
+    Route::get('/admin/usuarios', [AdminUserController::class, 'index'])
+        ->name('admin.users.index');
 
-
-    Route::get('/test-email', function () {
-        Mail::to('cam.chavez@duocuc.cl')->send(new TestMail());
-    return 'Correo enviado ✅';
-});
-
+    // Eliminar usuario
+    Route::delete('/admin/usuarios/{id}', [AdminUserController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('admin.users.destroy');
 });
 
 require __DIR__.'/auth.php';

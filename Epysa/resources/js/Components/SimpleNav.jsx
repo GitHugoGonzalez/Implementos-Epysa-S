@@ -213,7 +213,7 @@ export default function SimpleNav() {
                             </ResponsiveNavLink>
                             {isJefe && (
                                 <ResponsiveNavLink
-                                    href="/admin/usuarios"
+                                    href="/admin/users/index"
                                     className="text-gray-800"
                                 >
                                     Gestionar usuarios

@@ -13,7 +13,7 @@ export default function CreateUser() {
         fk_idSucursal: "",
     });
 
-    // 🚨 Alerta si el correo ya está registrado
+
     useEffect(() => {
         if (errors.email && errors.email.includes("ya ha sido registrado")) {
             alert("⚠️ Este correo ya está registrado. Por favor usa otro.");
