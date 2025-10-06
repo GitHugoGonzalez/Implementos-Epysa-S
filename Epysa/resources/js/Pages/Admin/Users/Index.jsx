@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
+import { Head, Link, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 export default function Index() {
-  const { users, q, sucursales, canDelete, authRol } = usePage().props;
+  const { users, q, sucursales, canDelete } = usePage().props;
   const [query, setQuery] = useState(q || "");
+  const [deletingId, setDeletingId] = useState(null); // para deshabilitar botón durante el delete
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -12,13 +13,20 @@ export default function Index() {
   };
 
   const confirmDelete = (id, name) => {
-    if (!canDelete) return;
-    if (window.confirm(`¿Eliminar al usuario "${name}"? Esta acción no se puede deshacer.`)) {
-      router.delete(route("admin.users.destroy", id), {
-        preserveScroll: true,
-        onSuccess: () => {},
-      });
-    }
+    if (!canDelete || !id) return;
+
+    const msg =
+      `¿Eliminar al usuario "${name}"?\n\n` +
+      `• Esta acción no se puede deshacer.\n` +
+      `• Si el usuario tiene solicitudes, igualmente se eliminará y verás un aviso.`;
+
+    if (!window.confirm(msg)) return;
+
+    setDeletingId(id);
+    router.delete(route("admin.users.destroy", id), {
+      preserveScroll: true,
+      onFinish: () => setDeletingId(null),
+    });
   };
 
   const fmtSucursal = (fk) => {
@@ -85,19 +93,14 @@ export default function Index() {
                     <Td className="capitalize">{u.rol || "—"}</Td>
                     <Td>{fmtSucursal(u.fk_idSucursal)}</Td>
                     <Td align="right">
-                      {/* Botón eliminar */}
                       {canDelete && (
                         <button
                           onClick={() => confirmDelete(u.id, u.name)}
                           className="px-3 py-1.5 rounded-lg bg-red-600 text-white hover:opacity-90 disabled:opacity-50"
-                          disabled={String(u.id) === String(usePage().props.auth?.user?.id)}
-                          title={
-                            String(u.id) === String(usePage().props.auth?.user?.id)
-                              ? "No puedes eliminarte a ti mismo"
-                              : "Eliminar usuario"
-                          }
+                          disabled={deletingId === u.id}
+                          title="Eliminar usuario"
                         >
-                          Eliminar
+                          {deletingId === u.id ? "Eliminando…" : "Eliminar"}
                         </button>
                       )}
                     </Td>
@@ -107,7 +110,6 @@ export default function Index() {
             </table>
           </div>
 
-          {/* Paginación */}
           <Pagination links={users.links} />
         </div>
       </div>
@@ -141,16 +143,26 @@ function Pagination({ links = [] }) {
   );
 }
 
+/** Ahora soporta flash.warning (amarillo) además de success/error */
 function FlashMessages() {
   const { flash } = usePage().props;
   if (!flash) return null;
   return (
     <div className="space-y-2 mb-4">
       {flash.success && (
-        <div className="px-4 py-2 rounded-lg bg-green-50 text-green-800 border border-green-200">{flash.success}</div>
+        <div className="px-4 py-2 rounded-lg bg-green-50 text-green-800 border border-green-200">
+          {flash.success}
+        </div>
+      )}
+      {flash.warning && (
+        <div className="px-4 py-2 rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
+          ⚠️ {flash.warning}
+        </div>
       )}
       {flash.error && (
-        <div className="px-4 py-2 rounded-lg bg-red-50 text-red-700 border border-red-200">{flash.error}</div>
+        <div className="px-4 py-2 rounded-lg bg-red-50 text-red-700 border border-red-200">
+          {flash.error}
+        </div>
       )}
     </div>
   );

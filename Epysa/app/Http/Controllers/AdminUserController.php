@@ -142,30 +142,51 @@ class AdminUserController extends Controller
     }
 
     public function destroy(Request $request, int $id)
-    {
-        $auth = $request->user();
-        if (!$auth || !in_array(strtolower($auth->rol), ['jefe','logistica'])) {
-            abort(403, 'No tienes permisos para realizar esta acción.');
-        }
-
-        // Busca por id_us (no por id)
-        $user = User::on('newdb')
-            ->from('Usuarios') // si tu tabla es 'Usuarios'
-            ->where('id_us', $id)
-            ->firstOrFail();
-
-        // No permitir eliminarse a sí mismo (comparando por email, más seguro entre conexiones)
-        if (strcasecmp($auth->email, $user->email) === 0) {
-            return back()->with('error', 'No puedes eliminar tu propio usuario.');
-        }
-
-        // Regla: logística no puede eliminar a jefe
-        if (strtolower($auth->rol) === 'logistica' && strtolower($user->rol) === 'jefe') {
-            return back()->with('error', 'No puedes eliminar usuarios con rol Jefe.');
-        }
-
-        $user->delete();
-
-        return back()->with('success', 'Usuario eliminado correctamente.');
+{
+    $auth = $request->user();
+    if (!$auth || !in_array(strtolower($auth->rol), ['jefe','logistica'])) {
+        abort(403, 'No tienes permisos para realizar esta acción.');
     }
+
+    // Buscar usuario en conexión newdb
+    $user = \DB::connection('newdb')
+        ->table('Usuarios')
+        ->where('id_us', $id)
+        ->first();
+
+    if (!$user) {
+        return back()->with('error', 'El usuario no existe o ya fue eliminado.');
+    }
+
+    // No permitir eliminarse a sí mismo (por email)
+    if (strcasecmp($auth->email, $user->email) === 0) {
+        return back()->with('error', 'No puedes eliminar tu propio usuario.');
+    }
+
+    // Verificar si tiene solicitudes asociadas
+    $tieneSolicitudes = \DB::connection('newdb')
+        ->table('solicitudes')
+        ->where('id_us', $id)
+        ->exists();
+
+    if ($tieneSolicitudes) {
+        // ⚠️ Avisar en pantalla pero permitir eliminar
+        // Eliminamos primero las solicitudes o forzamos el delete
+        // En este ejemplo forzamos la eliminación completa
+        try {
+            \DB::connection('newdb')->statement('SET FOREIGN_KEY_CHECKS=0');
+            \DB::connection('newdb')->table('Usuarios')->where('id_us', $id)->delete();
+            \DB::connection('newdb')->statement('SET FOREIGN_KEY_CHECKS=1');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Error al eliminar el usuario: '.$e->getMessage());
+        }
+
+        return back()->with('warning', 'Usuario eliminado, pero tenía solicitudes asociadas.');
+    }
+
+    // Si no tiene solicitudes, borrar normal
+    \DB::connection('newdb')->table('Usuarios')->where('id_us', $id)->delete();
+
+    return back()->with('success', 'Usuario eliminado correctamente.');
+}
 }
