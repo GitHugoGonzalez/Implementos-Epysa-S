@@ -154,31 +154,7 @@ export default function Index() {
                                 })}
                             </div>
 
-                            {/* Switch “Lo último” */}
-                            <div className="mt-4 flex items-center justify-between rounded-lg border p-3">
-                                <span className="text-sm font-medium text-gray-700">
-                                    Ordenar por lo último
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={toggleLatest}
-                                    className={[
-                                        "relative inline-flex h-6 w-11 items-center rounded-full transition",
-                                        sort === "latest"
-                                            ? "bg-blue-600"
-                                            : "bg-gray-300",
-                                    ].join(" ")}
-                                >
-                                    <span
-                                        className={[
-                                            "inline-block h-5 w-5 transform rounded-full bg-white transition",
-                                            sort === "latest"
-                                                ? "translate-x-5"
-                                                : "translate-x-1",
-                                        ].join(" ")}
-                                    />
-                                </button>
-                            </div>
+                            
                         </div>
                     </aside>
 
