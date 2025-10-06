@@ -17,6 +17,7 @@ class Insumo extends Model
         'descripcion_insumo',
         'precio_insumo',
         'imagen',
+        'categoria',
         'imagen_mime',
     ];
 

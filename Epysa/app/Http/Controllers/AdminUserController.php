@@ -24,7 +24,7 @@ class AdminUserController extends Controller
             ->get();
 
         // Solo estos roles puede crear el jefe
-        $rolesPermitidos = ['operario', 'encargado'];
+        $rolesPermitidos = ['operario', 'encargado', 'jefe','logistica'];
 
         return Inertia::render('Admin/Users/Create', [
             'sucursales'      => $sucursales,

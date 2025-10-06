@@ -12,7 +12,7 @@ class DashboardController extends Controller
     {
         $conn = DB::connection('newdb');
 
-        // 1) Conteo por día (últimos 30 días)
+        // 1) Serie diaria (últimos 30 días)
         $start = Carbon::today()->subDays(29)->toDateString(); // incluye hoy
         $rawDaily = $conn->table('solicitudes')
             ->select('fecha_sol', DB::raw('COUNT(*) as total'))
@@ -40,7 +40,7 @@ class DashboardController extends Controller
             ->orderBy('total', 'desc')
             ->get();
 
-        // 3) Top 5 insumos (por cantidad solicitada)
+        // 3) Top 5 insumos
         $topInsumos = $conn->table('solicitudes')
             ->select('insumo_nombre', DB::raw('SUM(cantidad) as total_cant'), DB::raw('COUNT(*) as solicitudes'))
             ->groupBy('insumo_nombre')
@@ -48,7 +48,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // 4) Solicitudes por sucursal (últimos 30 días)
+        // 4) Solicitudes por sucursal
         $bySucursal = $conn->table('solicitudes')
             ->select('sucursal_nombre', DB::raw('COUNT(*) as total'))
             ->where('fecha_sol', '>=', $start)
@@ -56,11 +56,12 @@ class DashboardController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        // 5) Urgentes vs No Urgentes
-        $idUrgente = $conn->table('estado')->where('desc_estado', 'Urgente')->value('id_estado');
+        // 5) Urgentes vs No Urgentes usando flag es_urgente
         $urgentes = $conn->table('solicitudes')
-            ->select(DB::raw('SUM(CASE WHEN id_estado = '.$conn->getPdo()->quote($idUrgente).' THEN 1 ELSE 0 END) as urgentes'),
-                     DB::raw('SUM(CASE WHEN id_estado != '.$conn->getPdo()->quote($idUrgente).' THEN 1 ELSE 0 END) as no_urgentes'))
+            ->selectRaw('
+                SUM(CASE WHEN es_urgente = 1 THEN 1 ELSE 0 END) as urgentes,
+                SUM(CASE WHEN es_urgente = 0 OR es_urgente IS NULL THEN 1 ELSE 0 END) as no_urgentes
+            ')
             ->first();
 
         return Inertia::render('Dashboard', [
