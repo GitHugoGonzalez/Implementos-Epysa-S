@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
@@ -12,6 +12,13 @@ export default function CreateUser() {
         rol: rolesPermitidos[0] ?? "operario",
         fk_idSucursal: "",
     });
+
+    // 🚨 Alerta si el correo ya está registrado
+    useEffect(() => {
+        if (errors.email && errors.email.includes("ya ha sido registrado")) {
+            alert("⚠️ Este correo ya está registrado. Por favor usa otro.");
+        }
+    }, [errors.email]);
 
     const submit = (e) => {
         e.preventDefault();
