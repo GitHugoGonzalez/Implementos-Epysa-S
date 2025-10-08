@@ -3,9 +3,9 @@ import { Head, Link, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 export default function Index() {
-  const { users, q, sucursales, canDelete } = usePage().props;
+  const { users, q, sucursales = {}, canDelete } = usePage().props; // 👈 default objeto
   const [query, setQuery] = useState(q || "");
-  const [deletingId, setDeletingId] = useState(null); // para deshabilitar botón durante el delete
+  const [deletingId, setDeletingId] = useState(null);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -29,9 +29,16 @@ export default function Index() {
     });
   };
 
-  const fmtSucursal = (fk) => {
-    if (!fk || !sucursales || !sucursales[fk]) return "—";
-    const s = sucursales[fk];
+  // 👇 Ahora busca con id_sucursal; si no viene en el row, mira el diccionario 'sucursales'
+  const fmtSucursal = (row) => {
+    // prioridad: campos ya resueltos por el JOIN del backend
+    if (row?.ciudad || row?.direccion) {
+      return `${row.ciudad ?? ""} ${row.ciudad && row.direccion ? "—" : ""} ${row.direccion ?? ""}`.trim() || "—";
+    }
+    // fallback: diccionario enviado desde el backend (keyed por id_sucursal)
+    const key = row?.id_sucursal ?? row?.fk_idSucursal; // compat vieja si aún viniera
+    if (!key || !sucursales || !sucursales[key]) return "—";
+    const s = sucursales[key];
     return `${s.ciudad} — ${s.direccion}`;
   };
 
@@ -63,7 +70,6 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Flash messages */}
           <FlashMessages />
 
           <div className="overflow-auto rounded-xl border">
@@ -91,7 +97,8 @@ export default function Index() {
                     <Td>{u.name}</Td>
                     <Td>{u.email}</Td>
                     <Td className="capitalize">{u.rol || "—"}</Td>
-                    <Td>{fmtSucursal(u.fk_idSucursal)}</Td>
+                    {/* 👇 ahora pasamos el row completo para que decida la sucursal */}
+                    <Td>{fmtSucursal(u)}</Td>
                     <Td align="right">
                       {canDelete && (
                         <button
@@ -143,7 +150,6 @@ function Pagination({ links = [] }) {
   );
 }
 
-/** Ahora soporta flash.warning (amarillo) además de success/error */
 function FlashMessages() {
   const { flash } = usePage().props;
   if (!flash) return null;

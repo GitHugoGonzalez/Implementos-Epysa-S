@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Usuario;
+use App\Models\User;       // <-- usa tu modelo real
 use App\Models\Sucursal;
 use App\Models\Rol;
 use Illuminate\Http\Request;
@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
 {
@@ -56,10 +57,19 @@ class AdminUserController extends Controller
             'name'        => ['required','string','max:150'],
             'email'       => ['required','email','max:150'],
             'password'    => ['required','string','min:8'],
-            // El frontend enviará 'nombre_rol' o 'id_rol' — soportemos ambos:
+            // Front puede enviar 'nombre_rol' o 'id_rol' — soportamos ambos:
             'nombre_rol'  => ['nullable','string'],
-            'id_rol'      => ['nullable','integer','exists:Roles,id_rol'],
-            'id_sucursal' => ['required','integer','exists:Sucursal,id_sucursal'],
+            'id_rol'      => [
+                'nullable',
+                'integer',
+                // apunta explícitamente a la conexión 'newdb'
+                Rule::exists('newdb.Roles', 'id_rol'),
+            ],
+            'id_sucursal' => [
+                'required',
+                'integer',
+                Rule::exists('newdb.Sucursal', 'id_sucursal'),
+            ],
         ]);
 
         // Resolver id_rol
@@ -73,20 +83,20 @@ class AdminUserController extends Controller
         }
 
         // Unicidad por email en 'newdb'
-        $emailExists = Usuario::on('newdb')->where('email', $data['email'])->exists();
+        $emailExists = User::query()->where('email', $data['email'])->exists(); // el modelo ya usa newdb
         if ($emailExists) {
             return back()->withErrors(['email' => 'El correo ya está registrado.'])->withInput();
         }
 
         $plainPassword = $data['password'];
 
-        $nuevo = new Usuario();
-        $nuevo->setConnection('newdb');
-        $nuevo->name         = $data['name'];
-        $nuevo->email        = $data['email'];
-        $nuevo->password     = Hash::make($plainPassword);
-        $nuevo->id_rol       = $idRol; // ✔ ahora FK
-        $nuevo->id_sucursal  = (int) $data['id_sucursal'];
+        $nuevo = new User();
+        // no necesitas setConnection, el modelo ya está en 'newdb'
+        $nuevo->name           = $data['name'];
+        $nuevo->email          = $data['email'];
+        $nuevo->password       = Hash::make($plainPassword);
+        $nuevo->id_rol         = $idRol; // ✔ ahora FK
+        $nuevo->id_sucursal    = (int) $data['id_sucursal'];
         $nuevo->estado_usuario = 'activo';
         $nuevo->save();
 
@@ -130,8 +140,8 @@ class AdminUserController extends Controller
 
         $q = trim((string) $request->query('q', ''));
 
-        $usersQuery = Usuario::on('newdb')
-            ->from('Usuarios as u')
+        $usersQuery = DB::connection('newdb')
+            ->table('Usuarios as u')
             ->join('Roles as r', 'r.id_rol', '=', 'u.id_rol')
             ->leftJoin('Sucursal as s', 's.id_sucursal', '=', 'u.id_sucursal')
             ->select([
@@ -181,7 +191,7 @@ class AdminUserController extends Controller
             abort(403, 'No tienes permisos para realizar esta acción.');
         }
 
-        $user = Usuario::on('newdb')->find($id);
+        $user = User::query()->find($id);
         if (!$user) {
             return back()->with('error', 'El usuario no existe o ya fue eliminado.');
         }

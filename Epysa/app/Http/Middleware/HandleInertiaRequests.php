@@ -19,14 +19,22 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => function () use ($request) {
                 $u = $request->user();
-                if (!$u) return ['user' => null];
 
-                // Asegura que venga la relación
-                $u->loadMissing('rolRef');
+                if (!$u) {
+                    return ['user' => null];
+                }
 
-                $rolRow    = optional($u->rolRef);
-                $rolNombre = $rolRow->nombre_rol
-                    ?? (is_string($u->rol ?? null) ? $u->rol : null); // compatibilidad si guardabas string
+                // Carga perezosa de relaciones (rol estándar + fallback)
+                $u->loadMissing(['rol', 'rolRef']);
+
+                // Resolver fila de rol con prioridad a la relación 'rol'
+                $rolRow = $u->relationLoaded('rol') && $u->rol ? $u->rol : $u->rolRef;
+
+                // Nombre de rol consistente (minúsculas)
+                $rolNombre = strtolower(trim(
+                    $rolRow->nombre_rol
+                    ?? ($u->rol ?? '')            // compat: si antes guardabas string en users.rol
+                ));
 
                 return [
                     'user' => [
@@ -34,7 +42,16 @@ class HandleInertiaRequests extends Middleware
                         'name'       => $u->name,
                         'email'      => $u->email,
                         'id_rol'     => $rolRow->id_rol ?? ($u->id_rol ?? null),
-                        'rol_nombre' => $rolNombre, // <- scalar, listo para usar en el front
+                        'rol_nombre' => $rolNombre ?: null,
+                    ],
+
+                    // Flags útiles directo al front (evita repetir lógica en cada página)
+                    'authRol'   => $u->rol_nombre,                       // p.ej. 'jefe'
+                    'can'       => [
+                        'verUsuarios'    => $u->hasRole('jefe','logistica'),
+                        'crearUsuarios'  => $u->hasRole('jefe'),
+                        'aprobar'        => $u->hasRole('encargado','jefe'),
+                        'verLogistica'   => $u->hasRole('logistica','jefe'),
                     ],
                 ];
             },
