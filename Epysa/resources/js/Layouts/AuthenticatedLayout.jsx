@@ -6,16 +6,58 @@ import { useEffect, useState } from "react";
 
 export default function AuthenticatedLayout({ header, children }) {
     const page = usePage();
-    const user = page.props.auth.user;
+
+    const { auth } = usePage().props;
+    const user = auth?.user;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false); // mobile menu
     const [isSideOpen, setIsSideOpen] = useState(false); // side menu (drawer)
 
-    const { auth } = usePage().props;
-    const isJefe = auth?.user?.rol === "jefe" || auth?.user?.rol === "Jefe";
     const isPathActive = (path) =>
         page.url === path || page.url.startsWith(path + "/");
+
+    // --- Helpers de rol y rutas seguras ---
+
+    // Normaliza cadenas (lowercase + sin tildes + trim)
+    const norm = (v) =>
+        String(v ?? "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .trim();
+
+    // Toma cualquier variante del nombre de rol que pueda venir desde el backend
+    const rawRole =
+        user?.rol_nombre ??
+        user?.rol?.nombre_rol ??
+        user?.rolRef?.nombre_rol ??
+        user?.role?.name ??
+        user?.role ??
+        user?.rol ??
+        "";
+
+    const roleName = norm(rawRole);
+
+    // Si tu backend envía id del rol en alguna de estas claves:
+    const roleId =
+        Number(user?.id_rol) ||
+        Number(user?.rol_id) ||
+        // a veces llega como string del id en user.rol
+        (Number.isFinite(Number(user?.rol)) ? Number(user?.rol) : null) ||
+        null;
+
+    // Marca como jefe si el nombre contiene "jefe" o si el id es 3 (según tu tabla)
+    const isJefe = roleName.includes("jefe", "Jefe") || roleId === 3;
+
+    // route() seguro: usa Ziggy si está definido y la ruta existe; si no, usa un fallback plano
+    const safeRoute = (name, fallback) => {
+        try {
+            return route(name);
+        } catch {
+            return fallback;
+        }
+    };
 
     // Cerrar el drawer con ESC
     useEffect(() => {
@@ -77,8 +119,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Nueva Solicitud
                                 </NavLink>
-
-                                
                             </div>
                         </div>
 
@@ -91,7 +131,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 aria-label="Abrir panel de usuario"
                                 aria-expanded={isSideOpen}
                             >
-                                {user.name}
+                                {user?.name}
                                 <svg
                                     className="-me-0.5 ms-2 h-4 w-4"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -191,16 +231,15 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Nueva Solicitud
                         </ResponsiveNavLink>
-                       
                     </div>
 
                     <div className="border-t border-blue-200 bg-white pb-1 pt-4">
                         <div className="px-4">
                             <div className="text-base font-medium text-gray-800">
-                                {user.name}
+                                {user?.name}
                             </div>
                             <div className="text-sm font-medium text-gray-500">
-                                {user.email}
+                                {user?.email}
                             </div>
                         </div>
                         <div className="mt-3 space-y-1">
@@ -261,10 +300,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Sesión iniciada como
                                 </p>
                                 <p className="text-base font-semibold text-gray-900">
-                                    {user.name}
+                                    {user?.name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    {user.email}
+                                    {user?.email}
                                 </p>
                             </div>
                             <button
@@ -299,10 +338,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                 Mi Perfil
                             </Link>
 
+                            {/* Enlaces para jefe */}
                             {isJefe && (
                                 <>
                                     <Link
-                                        href="/admin/usuarios/crear"
+                                        href={safeRoute(
+                                            "admin.users.create"
+                                        )}
                                         className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
                                         onClick={() => setIsSideOpen(false)}
                                     >
@@ -310,7 +352,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Link>
 
                                     <Link
-                                        href="/admin/usuarios"
+                                        href={safeRoute(
+                                            "admin.users.index",
+                                            "/admin/usuarios"
+                                        )}
                                         className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
                                         onClick={() => setIsSideOpen(false)}
                                     >
