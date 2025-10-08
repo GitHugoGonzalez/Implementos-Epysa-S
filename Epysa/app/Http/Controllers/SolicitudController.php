@@ -15,8 +15,9 @@ class SolicitudController extends Controller
 {
     public function create()
     {
-        $user   = Auth::user();
-        $isBoss = (strtolower(trim($user->rol ?? '')) === 'jefe');
+        $user = Auth::user();
+        $rolNombre = strtolower(trim(optional($user->rol)->nombre_rol ?? '')); // ← relación Roles
+        $isBoss = ($rolNombre === 'jefe');
 
         $insumos = Insumo::on('newdb')
             ->select('id_insumo','nombre_insumo')
@@ -28,18 +29,14 @@ class SolicitudController extends Controller
             ->orderBy('ciudad')
             ->get();
 
-        $estados = Estado::on('newdb')
-            ->select('id_estado','desc_estado')
-            ->orderBy('id_estado')
-            ->get();
-
-        // IDs base
-        $idPendiente = Estado::on('newdb')->where('desc_estado', 'Pendiente')->value('id_estado');
+        // ID de 'pendiente' (coincide con tus inserts)
+        $idPendiente = Estado::on('newdb')
+            ->whereRaw('LOWER(desc_estado) = ?', ['pendiente'])
+            ->value('id_estado');
 
         return Inertia::render('Solicitudes/Create', [
             'insumos'          => $insumos,
             'sucursales'       => $sucursales,
-            'estados'          => $estados,
             'canMarkUrgent'    => $isBoss,      // Solo jefe puede marcar urgente
             'defaultEstadoId'  => $idPendiente, // estado inicial por defecto
         ]);
@@ -48,55 +45,42 @@ class SolicitudController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $rol = strtolower($user->rol ?? '');
+        $rolNombre = strtolower(trim(optional($user->rol)->nombre_rol ?? '')); // ← relación Roles
 
-        $data = $request->validate([
-            'id_insumo'   => ['required','integer','min:1'],
-            'id_sucursal' => ['required','integer','min:1'],
-            'cantidad'    => ['required','integer','min:1'],
-            'fecha_sol'   => ['nullable','date'],
-            'es_urgente'  => ['nullable','boolean'], // checkbox en el form
-        ]);
-
-        $conn = DB::connection('newdb');
-
-        // Estados
-        $idPendiente        = $conn->table('estado')->where('desc_estado','Pendiente')->value('id_estado');
-        $idAprobEncargado   = $conn->table('estado')->where('desc_estado','Aprobada Encargado')->value('id_estado');
-        $idAprobJefe        = $conn->table('estado')->where('desc_estado','Aprobada Jefe')->value('id_estado');
-
-        // Estado inicial según rol
-        if ($rol === 'operario') {
-            $estadoInicial = $idPendiente;
-        } elseif ($rol === 'encargado') {
-            $estadoInicial = $idAprobEncargado;
-        } elseif ($rol === 'jefe') {
-            $estadoInicial = $idAprobJefe;
-        } else {
+        // Permisos: operario, encargado y jefe pueden crear
+        if (!in_array($rolNombre, ['operario','encargado','jefe'], true)) {
             abort(403, 'Rol no válido para crear solicitudes');
         }
 
-        // Solo jefe puede marcar urgente
-        $flagUrgente = ($rol === 'jefe' && !empty($data['es_urgente'])) ? 1 : 0;
-
-        // Guardar
-        Solicitud::on('newdb')->create([
-            'id_us'           => $user->id_us,
-            'usuario_nombre'  => $user->name,
-            'id_sucursal'     => $data['id_sucursal'],
-            'sucursal_nombre' => $conn->table('sucursal')
-                ->where('id_sucursal', $data['id_sucursal'])
-                ->value(DB::raw("CONCAT(ciudad,' — ',direccion)")),
-            'id_insumo'       => $data['id_insumo'],
-            'insumo_nombre'   => $conn->table('Insumos')
-                ->where('id_insumo', $data['id_insumo'])
-                ->value('nombre_insumo'),
-            'cantidad'        => $data['cantidad'],
-            'fecha_sol'       => $data['fecha_sol'] ?: now()->toDateString(),
-            'id_estado'       => $estadoInicial,
-            'es_urgente'      => $flagUrgente,   // 👈 flag siempre presente
+        $data = $request->validate([
+            'id_insumo'   => ['required','integer','exists:newdb.Insumos,id_insumo'],
+            'id_sucursal' => ['required','integer','exists:newdb.Sucursal,id_sucursal'],
+            'cantidad'    => ['required','integer','min:1'],
+            'fecha_sol'   => ['nullable','date'],
+            'es_urgente'  => ['nullable','boolean'], // checkbox en el form (solo jefe lo respeta)
         ]);
 
-        return redirect()->route('solicitudes.create')->with('success','Solicitud creada correctamente.');
+        // Estado inicial siempre 'pendiente' (según tu tabla Estado)
+        $idPendiente = DB::connection('newdb')->table('Estado')
+            ->whereRaw('LOWER(desc_estado) = ?', ['pendiente'])
+            ->value('id_estado');
+
+        // Solo jefe puede marcar urgente
+        $flagUrgente = ($rolNombre === 'jefe' && !empty($data['es_urgente'])) ? 1 : 0;
+
+        // Crear solicitud (solo columnas reales del esquema)
+        Solicitud::on('newdb')->create([
+            'id_us'       => $user->id_us,
+            'id_sucursal' => $data['id_sucursal'],
+            'id_insumo'   => $data['id_insumo'],
+            'cantidad'    => $data['cantidad'],
+            'fecha_sol'   => $data['fecha_sol'] ?: now()->toDateString(),
+            'id_estado'   => $idPendiente,
+            'es_urgente'  => $flagUrgente,
+            // 'observaciones' => $request->input('observaciones'), // si tu form la envía
+        ]);
+
+        return redirect()->route('solicitudes.create')
+            ->with('success','Solicitud creada correctamente.');
     }
 }

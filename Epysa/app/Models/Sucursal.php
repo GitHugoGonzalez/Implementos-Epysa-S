@@ -1,15 +1,12 @@
 <?php
-
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Model;
 
 class Sucursal extends Model
 {
     protected $connection = 'newdb';
-    protected $table = 'sucursal';
+    protected $table = 'Sucursal';
     protected $primaryKey = 'id_sucursal';
     public $timestamps = false;
-
-    protected $fillable = ['direccion', 'ciudad'];
+    protected $fillable = ['direccion','ciudad'];
 }

@@ -2,78 +2,104 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Usuario;
 use App\Models\Sucursal;
+use App\Models\Rol;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class AdminUserController extends Controller
 {
+    // Solo Jefe puede crear
     public function create(Request $request)
     {
         $user = $request->user();
-        if (!$user || strtolower($user->rol) !== 'jefe') {
+        if (!$user || !$user->hasRole('jefe')) {
             abort(403, 'No tienes permisos para acceder a esta sección.');
         }
 
         $sucursales = Sucursal::on('newdb')
-            ->select('id_sucursal', 'ciudad', 'direccion')
+            ->select('id_sucursal','ciudad','direccion')
             ->orderBy('ciudad')
             ->get();
 
-        $rolesPermitidos = ['operario', 'encargado', 'jefe','logistica'];
+        // Traer roles desde BD (evita hardcode)
+        $rolesPermitidos = Rol::on('newdb')
+            ->whereIn(DB::raw('LOWER(nombre_rol)'), ['operario','encargado','jefe','logistica'])
+            ->orderBy('nombre_rol')
+            ->get(['id_rol','nombre_rol']);
 
         return Inertia::render('Admin/Users/Create', [
             'sucursales'      => $sucursales,
-            'rolesPermitidos' => $rolesPermitidos,
+            'rolesPermitidos' => $rolesPermitidos, // [{id_rol, nombre_rol}]
         ]);
     }
 
+    // Solo Jefe puede guardar
     public function store(Request $request)
     {
         $authUser = $request->user();
-        if (!$authUser || strtolower($authUser->rol) !== 'jefe') {
+        if (!$authUser || !$authUser->hasRole('jefe')) {
             abort(403, 'No tienes permisos para realizar esta acción.');
         }
 
-        $rolesPermitidos = ['operario', 'encargado'];
+        // Permitimos crear Operario o Encargado (ajusta si quieres incluir Logística)
+        $rolesValidos = Rol::on('newdb')
+            ->whereIn(DB::raw('LOWER(nombre_rol)'), ['operario','encargado'])
+            ->pluck('id_rol','nombre_rol'); // ['operario'=>id, 'encargado'=>id]
 
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:100'],
-            'email'         => ['required', 'email', 'max:100'],
-            'password'      => ['required', 'string', 'min:8'],
-            'rol'           => ['required', 'in:' . implode(',', $rolesPermitidos)],
-            'fk_idSucursal' => ['required', 'integer', 'min:1'],
+            'name'        => ['required','string','max:150'],
+            'email'       => ['required','email','max:150'],
+            'password'    => ['required','string','min:8'],
+            // El frontend enviará 'nombre_rol' o 'id_rol' — soportemos ambos:
+            'nombre_rol'  => ['nullable','string'],
+            'id_rol'      => ['nullable','integer','exists:Roles,id_rol'],
+            'id_sucursal' => ['required','integer','exists:Sucursal,id_sucursal'],
         ]);
 
-        $plainPassword = $data['password'];
+        // Resolver id_rol
+        $idRol = $data['id_rol'] ?? null;
+        if (!$idRol && !empty($data['nombre_rol'])) {
+            $lookup = strtolower(trim($data['nombre_rol']));
+            $idRol = $rolesValidos[$lookup] ?? null;
+        }
+        if (!$idRol) {
+            return back()->withErrors(['id_rol' => 'Rol no permitido para creación.'])->withInput();
+        }
 
         // Unicidad por email en 'newdb'
-        $emailExists = User::on('newdb')->where('email', $data['email'])->exists();
+        $emailExists = Usuario::on('newdb')->where('email', $data['email'])->exists();
         if ($emailExists) {
             return back()->withErrors(['email' => 'El correo ya está registrado.'])->withInput();
         }
 
-        // Crear usuario (tabla con PK id_us y sin created_at)
-        $nuevo = new User();
+        $plainPassword = $data['password'];
+
+        $nuevo = new Usuario();
         $nuevo->setConnection('newdb');
-        $nuevo->name          = $data['name'];
-        $nuevo->email         = $data['email'];
-        $nuevo->password      = Hash::make($plainPassword);
-        $nuevo->rol           = $data['rol'];
-        $nuevo->fk_idSucursal = (int) $data['fk_idSucursal'];
+        $nuevo->name         = $data['name'];
+        $nuevo->email        = $data['email'];
+        $nuevo->password     = Hash::make($plainPassword);
+        $nuevo->id_rol       = $idRol; // ✔ ahora FK
+        $nuevo->id_sucursal  = (int) $data['id_sucursal'];
+        $nuevo->estado_usuario = 'activo';
         $nuevo->save();
 
-        $sucursalLabel = null;
+        // Para el correo
+        $rolNombre = optional($nuevo->rol)->nombre_rol;
+        $suc = optional($nuevo->sucursal);
+        $sucursalLabel = $suc ? "{$suc->ciudad} – {$suc->direccion}" : null;
 
         $payload = [
             'name'           => $nuevo->name,
             'email'          => $nuevo->email,
             'plain_password' => $plainPassword,
-            'rol'            => $nuevo->rol ?? null,
+            'rol'            => $rolNombre,
             'sucursal'       => $sucursalLabel,
             'login_url'      => rtrim(config('app.url'), '/') . '/login',
         ];
@@ -87,43 +113,49 @@ class AdminUserController extends Controller
                 'to'    => $nuevo->email,
                 'error' => $e->getMessage(),
             ]);
-
             return back()->with('error', 'Usuario creado, pero falló el envío de correo: '.$e->getMessage());
         }
 
-        return redirect('/admin/usuarios/crear')->with('success', 'Usuario creado y credenciales enviadas por correo ✅');
+        return redirect()->route('admin.users.create')
+            ->with('success', 'Usuario creado y credenciales enviadas por correo ✅');
     }
 
+    // Listado: Jefe o Logística
     public function index(Request $request)
     {
         $auth = $request->user();
-        if (!$auth || !in_array(strtolower($auth->rol), ['jefe','logistica'])) {
+        if (!$auth || ! $auth->hasRole('jefe','logistica')) {
             abort(403, 'No tienes permisos para acceder a esta sección.');
         }
 
         $q = trim((string) $request->query('q', ''));
 
-        // 👇 No hay created_at y la PK es id_us
-        $usersQuery = User::on('newdb')
-            ->from('Usuarios') // si tu tabla real es 'Usuarios'
+        $usersQuery = Usuario::on('newdb')
+            ->from('Usuarios as u')
+            ->join('Roles as r', 'r.id_rol', '=', 'u.id_rol')
+            ->leftJoin('Sucursal as s', 's.id_sucursal', '=', 'u.id_sucursal')
             ->select([
-                'id_us as id',     // alias para el frontend
-                'name',
-                'email',
-                'rol',
-                'fk_idSucursal',
+                'u.id_us as id',
+                'u.name',
+                'u.email',
+                'r.nombre_rol as rol',       // ✔ string para el front
+                'u.id_sucursal',
+                's.ciudad',
+                's.direccion',
+                'u.estado_usuario',
             ]);
 
         if ($q !== '') {
             $usersQuery->where(function($s) use ($q) {
-                $s->where('name', 'like', "%{$q}%")
-                  ->orWhere('email', 'like', "%{$q}%")
-                  ->orWhere('rol', 'like', "%{$q}%");
+                $s->where('u.name', 'like', "%{$q}%")
+                  ->orWhere('u.email', 'like', "%{$q}%")
+                  ->orWhere('r.nombre_rol', 'like', "%{$q}%")
+                  ->orWhere('s.ciudad', 'like', "%{$q}%");
             });
         }
 
         $users = $usersQuery
-            ->orderBy('id_us','desc')   // 👈 ordenar por PK
+            ->orderByDesc('u.id_us')
             ->paginate(10)
             ->withQueryString();
 
@@ -136,57 +168,43 @@ class AdminUserController extends Controller
             'users'      => $users,
             'q'          => $q,
             'sucursales' => $sucursales,
-            'canDelete'  => in_array(strtolower($auth->rol), ['jefe','logistica']),
-            'authRol'    => strtolower($auth->rol),
+            'canDelete'  => $auth->hasRole('jefe','logistica'),
+            'authRol'    => $auth->rol_nombre, // 'jefe','logistica', etc.
         ]);
     }
 
+    // Eliminar: Jefe o Logística
     public function destroy(Request $request, int $id)
-{
-    $auth = $request->user();
-    if (!$auth || !in_array(strtolower($auth->rol), ['jefe','logistica'])) {
-        abort(403, 'No tienes permisos para realizar esta acción.');
-    }
-
-    // Buscar usuario en conexión newdb
-    $user = \DB::connection('newdb')
-        ->table('Usuarios')
-        ->where('id_us', $id)
-        ->first();
-
-    if (!$user) {
-        return back()->with('error', 'El usuario no existe o ya fue eliminado.');
-    }
-
-    // No permitir eliminarse a sí mismo (por email)
-    if (strcasecmp($auth->email, $user->email) === 0) {
-        return back()->with('error', 'No puedes eliminar tu propio usuario.');
-    }
-
-    // Verificar si tiene solicitudes asociadas
-    $tieneSolicitudes = \DB::connection('newdb')
-        ->table('solicitudes')
-        ->where('id_us', $id)
-        ->exists();
-
-    if ($tieneSolicitudes) {
-        // ⚠️ Avisar en pantalla pero permitir eliminar
-        // Eliminamos primero las solicitudes o forzamos el delete
-        // En este ejemplo forzamos la eliminación completa
-        try {
-            \DB::connection('newdb')->statement('SET FOREIGN_KEY_CHECKS=0');
-            \DB::connection('newdb')->table('Usuarios')->where('id_us', $id)->delete();
-            \DB::connection('newdb')->statement('SET FOREIGN_KEY_CHECKS=1');
-        } catch (\Throwable $e) {
-            return back()->with('error', 'Error al eliminar el usuario: '.$e->getMessage());
+    {
+        $auth = $request->user();
+        if (!$auth || ! $auth->hasRole('jefe','logistica')) {
+            abort(403, 'No tienes permisos para realizar esta acción.');
         }
 
-        return back()->with('warning', 'Usuario eliminado, pero tenía solicitudes asociadas.');
+        $user = Usuario::on('newdb')->find($id);
+        if (!$user) {
+            return back()->with('error', 'El usuario no existe o ya fue eliminado.');
+        }
+
+        if (strcasecmp($auth->email, $user->email) === 0) {
+            return back()->with('error', 'No puedes eliminar tu propio usuario.');
+        }
+
+        // ¿Tiene dependencias? (Solicitudes, Aprobaciones, Logistica, Auditoria, Notificaciones)
+        $conn = DB::connection('newdb');
+        $tieneDeps = $conn->table('Solicitudes')->where('id_us', $id)->exists()
+            || $conn->table('Aprobaciones')->where('aprobado_por', $id)->exists()
+            || $conn->table('Logistica')->where('rechazado_por', $id)->exists()
+            || $conn->table('Auditoria')->where('last_modified_by', $id)->exists()
+            || $conn->table('Notificaciones')->where('id_usuario', $id)->exists();
+
+        if ($tieneDeps) {
+            // Política segura: no borrar duro si hay relaciones
+            return back()->with('error', 'No se puede eliminar: el usuario tiene registros asociados.');
+        }
+
+        $user->delete();
+
+        return back()->with('success', 'Usuario eliminado correctamente.');
     }
-
-    // Si no tiene solicitudes, borrar normal
-    \DB::connection('newdb')->table('Usuarios')->where('id_us', $id)->delete();
-
-    return back()->with('success', 'Usuario eliminado correctamente.');
-}
 }

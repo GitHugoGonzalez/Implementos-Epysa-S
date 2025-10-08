@@ -7,33 +7,37 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
-        return [
-            ...parent::share($request),
-            'auth' => [
-                'user' => $request->user(),
-            ],
-        ];
+        return array_merge(parent::share($request), [
+            'auth' => function () use ($request) {
+                $u = $request->user();
+                if (!$u) return ['user' => null];
+
+                // Asegura que venga la relación
+                $u->loadMissing('rolRef');
+
+                $rolRow    = optional($u->rolRef);
+                $rolNombre = $rolRow->nombre_rol
+                    ?? (is_string($u->rol ?? null) ? $u->rol : null); // compatibilidad si guardabas string
+
+                return [
+                    'user' => [
+                        'id'         => $u->id_us ?? $u->id ?? null,
+                        'name'       => $u->name,
+                        'email'      => $u->email,
+                        'id_rol'     => $rolRow->id_rol ?? ($u->id_rol ?? null),
+                        'rol_nombre' => $rolNombre, // <- scalar, listo para usar en el front
+                    ],
+                ];
+            },
+        ]);
     }
 }

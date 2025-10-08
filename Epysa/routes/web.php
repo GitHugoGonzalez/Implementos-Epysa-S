@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\SolicitudAprobadaController;
 use App\Http\Controllers\EncargadoSolicitudesController;
 use App\Http\Controllers\LogisticaController;
+use App\Http\Controllers\HistorialSolicitudesController;
 
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TestMail;
@@ -84,6 +85,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/admin/usuarios/{id}', [AdminUserController::class, 'destroy'])
         ->whereNumber('id')
         ->name('admin.users.destroy');
+
+    Route::get('/solicitudes/historial', [HistorialSolicitudesController::class, 'index'])
+    ->name('solicitudes.historial');
+
+    Route::get('/solicitudes/historial/export', [HistorialSolicitudesController::class, 'export'])
+    ->name('solicitudes.historial.export');
 });
 
 require __DIR__.'/auth.php';
