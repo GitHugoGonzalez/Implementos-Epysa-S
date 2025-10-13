@@ -89,25 +89,26 @@ CREATE TABLE Aprobaciones (
 CREATE TABLE Logistica (
   id_logistica INT AUTO_INCREMENT PRIMARY KEY,
   id_solicitud INT NOT NULL,
-  id_usuario INT,
   fecha_envio DATE,
   fecha_estimada DATE,
   numero_camion VARCHAR(50),
   ruta_asignada VARCHAR(255),
   rechazo_motivo VARCHAR(255),
+  rechazado_por INT,
   rechazado_at DATETIME,
   fecha_entrega_real DATE,
   estado_logistica ENUM('pendiente','en_transito','entregado','rechazado') DEFAULT 'pendiente',
   FOREIGN KEY (id_solicitud) REFERENCES Solicitudes(id_solicitud),
-  FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_us)
+  FOREIGN KEY (rechazado_por) REFERENCES Usuarios(id_us)
 );
 
 CREATE TABLE Auditoria (
   id_audit INT AUTO_INCREMENT PRIMARY KEY,
-  id_us INT NOT NULL,
+  id_solicitud INT NOT NULL,
+  last_modified_by INT NOT NULL,
   last_modified_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   accion ENUM('CREAR','MODIFICAR','ELIMINAR') NOT NULL,
-  FOREIGN KEY (id_us) REFERENCES Usuarios(id_us),
+  FOREIGN KEY (id_solicitud) REFERENCES Solicitudes(id_solicitud),
   FOREIGN KEY (last_modified_by) REFERENCES Usuarios(id_us)
 );
 
