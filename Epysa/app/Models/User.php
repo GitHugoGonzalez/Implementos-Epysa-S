@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Traits\Auditable;
 
 class User extends Authenticatable
 {
     use Notifiable;
+    use Auditable;
 
     // Conexión/tabla/PK del nuevo esquema
     protected $connection = 'newdb';

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Solicitud extends Model
 {
+    use Auditable;
     protected $connection = 'newdb';
     protected $table = 'Solicitudes';            // ojo: con mayúscula como en tu SQL
     protected $primaryKey = 'id_solicitud';
