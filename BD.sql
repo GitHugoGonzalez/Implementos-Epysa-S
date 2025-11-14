@@ -124,6 +124,21 @@ CREATE TABLE Historial_Insumos (
 );
 
 -- ==========================
+-- NUEVA TABLA: AUDITORÍA
+-- ==========================
+
+CREATE TABLE Auditoria (
+    id_audit INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,            -- quién realizó la acción
+    accion VARCHAR(150) NOT NULL,   -- qué acción se realizó
+    valores_antes JSON NULL,
+    valores_despues JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES Usuarios(id_us)
+);
+
+
+-- ==========================
 -- DATOS BASE
 -- ==========================
 
