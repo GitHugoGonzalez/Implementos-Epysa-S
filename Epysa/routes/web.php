@@ -12,6 +12,7 @@ use App\Http\Controllers\SolicitudAprobadaController;
 use App\Http\Controllers\EncargadoSolicitudesController;
 use App\Http\Controllers\LogisticaController;
 use App\Http\Controllers\HistorialSolicitudesController;
+use App\Http\Controllers\AuditoriaController;
 
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TestMail;
@@ -101,6 +102,11 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/insumos/{id}', [InsumoController::class, 'destroy'])
         ->whereNumber('id')->name('insumos.destroy');
+
+    //AUDITORIA
+    Route::get('/auditoria', [AuditoriaController::class, 'index'])
+    ->name('auditoria.index')
+    ->middleware('auth');
 });
 
 require __DIR__.'/auth.php';

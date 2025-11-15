@@ -361,6 +361,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                     >
                                         Gestionar usuarios
                                     </Link>
+
+                                    <Link
+                                        href={route("auditoria.index")}
+                                        className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsSideOpen(false)}
+                                    >
+                                        Auditoría del sistema
+                                    </Link>
+
                                 </>
                             )}
 
