@@ -129,8 +129,8 @@ CREATE TABLE Historial_Insumos (
 
 CREATE TABLE Auditoria (
     id_audit INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT NULL,            -- quién realizó la acción
-    accion VARCHAR(150) NOT NULL,   -- qué acción se realizó
+    usuario_id INT NULL,
+    accion VARCHAR(150) NOT NULL,
     valores_antes JSON NULL,
     valores_despues JSON NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
