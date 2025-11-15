@@ -134,43 +134,58 @@ class InsumoController extends Controller
     }
 
     // ========= ACTUALIZAR =========
-    public function update(Request $request, int $id)
-    {
-        $data = $request->validate([
-            'nombre_insumo'      => ['required','string','max:150'],
-            'stock'              => ['required','integer','min:0'],
-            'descripcion_insumo' => ['nullable','string'],
-            'precio_insumo'      => ['required','numeric','min:0'],
-            'categoria'          => ['nullable','string','max:100'],
-            'imagen'             => ['nullable','file','image','mimes:jpeg,png,webp,jpg','max:4096'],
+public function update(Request $request, int $id)
+{
+    $data = $request->validate([
+        'nombre_insumo'      => ['required','string','max:150'],
+        'stock'              => ['required','integer','min:0'],
+        'descripcion_insumo' => ['nullable','string'],
+        'precio_insumo'      => ['required','numeric','min:0'],
+        'categoria'          => ['nullable','string','max:100'],
+        'imagen'             => ['nullable','file','image','mimes:jpeg,png,webp,jpg','max:4096'],
+    ]);
+
+    $conn = DB::connection('newdb');
+    $insumoAntes = $conn->table('Insumos')->where('id_insumo', $id)->first();
+
+    if (!$insumoAntes) abort(404, 'Insumo no encontrado');
+
+    $conn->transaction(function () use ($conn, $data, $request, $id, $insumoAntes) {
+
+        $conn->table('Insumos')->where('id_insumo', $id)->update([
+            'nombre_insumo'      => $data['nombre_insumo'],
+            'stock'              => $data['stock'],
+            'descripcion_insumo' => $data['descripcion_insumo'] ?? null,
+            'precio_insumo'      => $data['precio_insumo'],
+            'categoria'          => $data['categoria'] ?? null,
         ]);
 
-        $conn = DB::connection('newdb');
-        $exists = $conn->table('Insumos')->where('id_insumo', $id)->exists();
-        if (!$exists) abort(404, 'Insumo no encontrado');
+        if ($request->hasFile('imagen')) {
+            $file = $request->file('imagen');
 
-        $conn->transaction(function () use ($conn, $data, $request, $id) {
-            $conn->table('Insumos')->where('id_insumo', $id)->update([
-                'nombre_insumo'      => $data['nombre_insumo'],
-                'stock'              => $data['stock'],
-                'descripcion_insumo' => $data['descripcion_insumo'] ?? null,
-                'precio_insumo'      => $data['precio_insumo'],
-                'categoria'          => $data['categoria'] ?? null,
+            $conn->table('Insumo_Imagen')->where('id_insumo', $id)->delete();
+
+            $conn->table('Insumo_Imagen')->insert([
+                'id_insumo' => $id,
+                'imagen'    => file_get_contents($file->getRealPath()),
+                'mime'      => $file->getMimeType() ?: 'application/octet-stream',
             ]);
+        }
 
-            if ($request->hasFile('imagen')) {
-                $file = $request->file('imagen');
-                $conn->table('Insumo_Imagen')->where('id_insumo', $id)->delete();
-                $conn->table('Insumo_Imagen')->insert([
-                    'id_insumo' => $id,
-                    'imagen'    => file_get_contents($file->getRealPath()),
-                    'mime'      => $file->getMimeType() ?: 'application/octet-stream',
-                ]);
-            }
-        });
+        $insumoDespues = $conn->table('Insumos')->where('id_insumo', $id)->first();
 
-        return redirect()->route('insumos.index')->with('success', 'Insumo actualizado correctamente.');
-    }
+        \App\Models\AuditLog::create([
+            'usuario_id'      => auth()->id(),
+            'accion'          => 'ACTUALIZAR_INSUMO',
+            'valores_antes'   => (array) $insumoAntes,
+            'valores_despues' => (array) $insumoDespues,
+            'created_at'      => now(),
+        ]);
+    });
+
+    return redirect()->route('insumos.index')->with('success', 'Insumo actualizado correctamente.');
+}
+
 
     // ========= ELIMINAR (guarda en historial) =========
     public function destroy(Request $request, int $id)
@@ -213,6 +228,21 @@ class InsumoController extends Controller
 
                 // Borrar imagen primero
                 $conn->table('Insumo_Imagen')->where('id_insumo', $id)->delete();
+
+                // Auditoría manual porque usamos DB::table
+                (new \App\Models\AuditLog)->create([
+                    'usuario_id'      => auth()->id(),
+                    'accion'          => 'ELIMINAR_INSUMO',
+                    'valores_antes'   => [
+                        'id_insumo'          => $insumo->id_insumo,
+                        'nombre_insumo'      => $insumo->nombre_insumo,
+                        'fecha_creacion'     => $insumo->fecha_creacion,
+                        'motivo_eliminacion' => $motivo ?? null,
+                    ],
+                    'valores_despues' => null,
+                    'created_at'      => now(),
+                ]);
+
 
                 // Borrar insumo
                 $conn->table('Insumos')->where('id_insumo', $id)->delete();
