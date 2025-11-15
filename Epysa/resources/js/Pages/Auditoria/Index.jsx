@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import AuditDiff from "@/Components/AuditDiff";
 import SimpleNav from "@/Components/SimpleNav";
+import { getActionLabel } from "@/Utils/AuditLabels";
 
 export default function AuditoriaIndex() {
     const {
@@ -78,7 +79,7 @@ export default function AuditoriaIndex() {
                         >
                             <option value="">Todas las acciones</option>
                             {acciones.map((a) => (
-                                <option key={a} value={a}>{a}</option>
+                                <option key={a} value={a}>{getActionLabel(a)}</option>
                             ))}
                         </select>
 
@@ -165,7 +166,7 @@ export default function AuditoriaIndex() {
                                             {l.usuario_nombre || "—"}
                                         </td>
 
-                                        <td className="px-3 py-2">{l.accion}</td>
+                                        <td className="px-3 py-2">{getActionLabel(l.accion)}</td>
 
                                         <td className="px-3 py-2">
                                             <AuditDiff
