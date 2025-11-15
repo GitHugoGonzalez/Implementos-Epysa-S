@@ -129,8 +129,6 @@ class SolicitudAprobadaController extends Controller
                 $sol->getChanges()
             );
 
-
-
             DB::connection('newdb')->table('Aprobaciones')->insert([
                 'id_solicitud'    => $sol->id_solicitud,
                 'tipo_aprobacion' => ucfirst($rol),
