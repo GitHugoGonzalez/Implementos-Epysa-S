@@ -26,28 +26,23 @@ class HistorialSolicitudesController extends Controller
                 'insumo:id_insumo,nombre_insumo',
                 'estado:id_estado,desc_estado',
             ])
+            // 🔍 Filtro de texto: SOLO N° de solicitud + nombre del solicitante
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($qq) use ($q) {
                     $qq->where('id_solicitud', 'like', "%{$q}%")
-                       ->orWhere('cantidad', 'like', "%{$q}%")
                        ->orWhereHas('usuario', function ($u) use ($q) {
-                           $u->where('name', 'like', "%{$q}%")
-                             ->orWhere('email', 'like', "%{$q}%");
-                       })
-                       ->orWhereHas('sucursal', function ($s) use ($q) {
-                           $s->where('ciudad', 'like', "%{$q}%")
-                             ->orWhere('direccion', 'like', "%{$q}%");
-                       })
-                       ->orWhereHas('insumo', function ($i) use ($q) {
-                           $i->where('nombre_insumo', 'like', "%{$q}%");
-                       })
-                       ->orWhereHas('estado', function ($e) use ($q) {
-                           $e->where('desc_estado', 'like', "%{$q}%");
+                           $u->where('name', 'like', "%{$q}%");
                        });
                 });
             })
-            ->when(!empty($sucursal), fn($q2) => $q2->where('id_sucursal', $sucursal))
-            ->when(!empty($estado),   fn($q2) => $q2->where('id_estado',   $estado))
+            // Filtro por sucursal
+            ->when($sucursal !== null && $sucursal !== '', fn ($q2) =>
+                $q2->where('id_sucursal', $sucursal)
+            )
+            // Filtro por estado
+            ->when($estado !== null && $estado !== '', fn ($q2) =>
+                $q2->where('id_estado', $estado)
+            )
             ->orderBy('fecha_sol', 'desc')
             ->paginate(15)
             ->withQueryString();
@@ -86,7 +81,7 @@ class HistorialSolicitudesController extends Controller
      */
     public function export(Request $request): StreamedResponse
     {
-        $payload  = $request->only(['q','estado','sucursal']);
+        $payload  = $request->only(['q', 'estado', 'sucursal']);
         $q        = trim((string) ($payload['q'] ?? ''));
         $estadoId = $payload['estado']   ?? null;
         $sucursal = $payload['sucursal'] ?? null;
@@ -104,7 +99,7 @@ class HistorialSolicitudesController extends Controller
             $headers = ['Fecha', 'N° Solicitud', 'Estado', 'Sucursal', 'Solicitante', 'Correo', 'Insumo', 'Cantidad'];
             fputcsv($out, $headers, ';'); // ; suele abrir mejor en Excel versión ES/CL
 
-            // Query base (misma que index, pero sin paginar)
+            // Query base (misma lógica que index, pero sin paginar)
             $query = Solicitud::on('newdb')
                 ->with([
                     'usuario:id_us,name,email',
@@ -112,28 +107,23 @@ class HistorialSolicitudesController extends Controller
                     'insumo:id_insumo,nombre_insumo',
                     'estado:id_estado,desc_estado',
                 ])
+                // 🔍 Mismo filtro de texto: N° solicitud + nombre solicitante
                 ->when($q !== '', function ($builder) use ($q) {
                     $builder->where(function ($qq) use ($q) {
                         $qq->where('id_solicitud', 'like', "%{$q}%")
-                           ->orWhere('cantidad', 'like', "%{$q}%")
                            ->orWhereHas('usuario', function ($u) use ($q) {
-                               $u->where('name', 'like', "%{$q}%")
-                                 ->orWhere('email', 'like', "%{$q}%");
-                           })
-                           ->orWhereHas('sucursal', function ($s) use ($q) {
-                               $s->where('ciudad', 'like', "%{$q}%")
-                                 ->orWhere('direccion', 'like', "%{$q}%");
-                           })
-                           ->orWhereHas('insumo', function ($i) use ($q) {
-                               $i->where('nombre_insumo', 'like', "%{$q}%");
-                           })
-                           ->orWhereHas('estado', function ($e) use ($q) {
-                               $e->where('desc_estado', 'like', "%{$q}%");
+                               $u->where('name', 'like', "%{$q}%");
                            });
                     });
                 })
-                ->when(!empty($sucursal), fn($q2) => $q2->where('id_sucursal', $sucursal))
-                ->when(!empty($estadoId), fn($q2) => $q2->where('id_estado',   $estadoId))
+                // Sucursal
+                ->when($sucursal !== null && $sucursal !== '', fn ($q2) =>
+                    $q2->where('id_sucursal', $sucursal)
+                )
+                // Estado
+                ->when($estadoId !== null && $estadoId !== '', fn ($q2) =>
+                    $q2->where('id_estado', $estadoId)
+                )
                 ->orderBy('id_solicitud'); // para chunk estable
 
             // Stream por chunks para no reventar memoria
@@ -141,7 +131,10 @@ class HistorialSolicitudesController extends Controller
                 foreach ($rows as $row) {
                     $sucursalTxt = '';
                     if ($row->sucursal) {
-                        $parts = array_filter([$row->sucursal->ciudad ?? null, $row->sucursal->direccion ?? null]);
+                        $parts = array_filter([
+                            $row->sucursal->ciudad ?? null,
+                            $row->sucursal->direccion ?? null,
+                        ]);
                         $sucursalTxt = implode(' - ', $parts);
                     }
 

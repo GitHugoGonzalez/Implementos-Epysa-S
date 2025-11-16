@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
 import Modal from "@/Components/Modal";
+
+// 🔔 MUI Snackbar
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 export default function Create() {
   // 👇 defaults para que nunca crashee si alguna prop no llega
@@ -22,22 +26,34 @@ export default function Create() {
     id_sucursal: "",
     cantidad: 1,
     fecha_sol: new Date().toISOString().substring(0, 10),
-    es_urgente: false,              // 👈 ahora enviamos el flag
-    // id_estado: idPendiente,      // (opcional) el backend igual setea 'pendiente'
+    es_urgente: false,
+    motivo: "", // 👈 nuevo campo
+    // id_estado: idPendiente,
   });
+
+  // Estado para Snackbar
+  const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMessage, setSnackMessage] = useState("");
+
+  const handleSnackClose = (_, reason) => {
+    if (reason === "clickaway") return;
+    setSnackOpen(false);
+  };
 
   const submit = (e) => {
     e.preventDefault();
     post("/solicitudes", {
-      onSuccess: () =>
-        reset({
-          id_insumo: "",
-          id_sucursal: "",
-          cantidad: 1,
-          fecha_sol: new Date().toISOString().substring(0, 10),
-          es_urgente: false,
-          // id_estado: idPendiente,
-        }),
+      onSuccess: () => {
+        // 🔹 Resetear a valores iniciales definidos en useForm
+        reset();
+
+        // 🔹 Opcional: asegurar fecha actual después del reset
+        setData("fecha_sol", new Date().toISOString().substring(0, 10));
+
+        // 🔹 Mostrar Snackbar de éxito
+        setSnackMessage("Solicitud creada correctamente.");
+        setSnackOpen(true);
+      },
     });
   };
 
@@ -126,6 +142,31 @@ export default function Create() {
               </div>
             </div>
 
+            {/* Motivo */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Motivo de la Solicitud (máx. 500 caracteres)
+              </label>
+              <textarea
+                className="w-full border rounded-lg p-2 min-h-[100px]"
+                value={data.motivo}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 500) {
+                    setData("motivo", value);
+                  }
+                }}
+                placeholder="Explica brevemente por qué necesitas este insumo…"
+              />
+              <div className="flex justify-between text-xs mt-1">
+                {errors.motivo ? (
+                  <p className="text-red-600">{errors.motivo}</p>
+                ) : (
+                  <p className="text-gray-500">{data.motivo.length}/500</p>
+                )}
+              </div>
+            </div>
+
             {/* Urgente (solo Jefe) */}
             <div className="flex items-center gap-2">
               <input
@@ -159,6 +200,7 @@ export default function Create() {
         </div>
       </div>
 
+      {/* Modal de "Enviando..." */}
       <Modal show={processing} onClose={() => {}}>
         <div className="p-6 text-center">
           <svg
@@ -185,6 +227,23 @@ export default function Create() {
           </p>
         </div>
       </Modal>
+
+      {/* Snackbar de MUI para alerta visual */}
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleSnackClose}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

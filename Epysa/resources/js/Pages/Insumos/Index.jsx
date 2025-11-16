@@ -28,9 +28,16 @@ export default function Index() {
       currency: "CLP",
     }).format(Number(num ?? 0));
 
+  // 🔹 Normalizar siempre a array
+  const selectedArray = useMemo(() => {
+    if (Array.isArray(selectedCategorias)) return selectedCategorias;
+    if (!selectedCategorias) return [];
+    return [selectedCategorias];
+  }, [selectedCategorias]);
+
   const selectedSet = useMemo(
-    () => new Set([].concat(selectedCategorias || [])),
-    [selectedCategorias]
+    () => new Set(selectedArray),
+    [selectedArray]
   );
 
   const applyFilters = ({ categoriasArr, qText, sortKey } = {}) => {
@@ -39,7 +46,7 @@ export default function Index() {
     const query = qText ?? q;
     const s = sortKey ?? sort;
 
-    if (cats.length) params.categoria = cats;
+    if (cats.length) params.categoria = cats; // se envía como categoria[]=...
     if (query) params.q = query;
     if (s && s !== "default") params.sort = s;
 
@@ -86,7 +93,6 @@ export default function Index() {
 
     if (typed == null) return; // Cancelado
 
-    // Enviamos confirm_name al backend (el back hace validación robusta)
     router.delete(route("insumos.destroy", id), {
       data: { confirm_name: typed },
       preserveScroll: true,
@@ -122,17 +128,10 @@ export default function Index() {
                 </div>
               </form>
 
-              {/* Orden */}
-              <button
-                onClick={toggleLatest}
-                className="w-full rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-                title="Alternar orden por más recientes"
-              >
-                Orden: {sort === "latest" ? "Más recientes" : "Por ID descendente"}
-              </button>
-
-              {/* Categorías (placeholder) */}
-              <h3 className="mt-4 mb-2 text-sm font-semibold text-gray-600">Categoría</h3>
+              {/* Categorías */}
+              <h3 className="mt-4 mb-2 text-sm font-semibold text-gray-600">
+                Categoría
+              </h3>
               <div className="mb-2 flex flex-wrap gap-2">
                 <button
                   onClick={clearCategorias}
@@ -185,15 +184,19 @@ export default function Index() {
 
               {/* GRID DE CARDS */}
               {!insumos || insumos.length === 0 ? (
-                <div className="py-16 text-center text-gray-500">No hay insumos aún</div>
+                <div className="py-16 text-center text-gray-500">
+                  No hay insumos aún
+                </div>
               ) : (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                   {insumos.map((insumo) => {
                     const id = insumo.id_insumo ?? insumo.id ?? "";
-                    const nombre = insumo.nombre_insumo ?? insumo.nombre ?? "Sin nombre";
+                    const nombre =
+                      insumo.nombre_insumo ?? insumo.nombre ?? "Sin nombre";
                     const precio = insumo.precio_insumo ?? insumo.precio ?? 0;
                     const stock = insumo.stock ?? 0;
-                    const imgUrl = insumo.imagen_url || route("insumos.imagen", id);
+                    const imgUrl =
+                      insumo.imagen_url || route("insumos.imagen", id);
 
                     return (
                       <article
@@ -236,7 +239,9 @@ export default function Index() {
                             >
                               Stock: {stock}
                             </span>
-                            <span className="text-xs text-gray-500">ID #{id}</span>
+                            <span className="text-xs text-gray-500">
+                              ID #{id}
+                            </span>
                           </div>
 
                           {/* Acciones */}

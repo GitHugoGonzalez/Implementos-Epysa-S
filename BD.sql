@@ -64,6 +64,7 @@ CREATE TABLE Solicitudes (
   cantidad INT NOT NULL,
   fecha_sol DATE NOT NULL,
   id_estado INT NOT NULL,
+  motivo VARCHAR(500) NULL,
   es_urgente BOOLEAN DEFAULT FALSE,
   observaciones TEXT,
   FOREIGN KEY (id_us) REFERENCES Usuarios(id_us),

@@ -8,8 +8,9 @@ use App\Traits\Auditable;
 class Solicitud extends Model
 {
     use Auditable;
+
     protected $connection = 'newdb';
-    protected $table = 'Solicitudes';            // ojo: con mayúscula como en tu SQL
+    protected $table = 'Solicitudes';   // mismo nombre que en tu SQL
     protected $primaryKey = 'id_solicitud';
     public $timestamps = false;
 
@@ -18,6 +19,7 @@ class Solicitud extends Model
         'id_sucursal',
         'id_insumo',
         'cantidad',
+        'motivo',        // 👈 AGREGADO
         'fecha_sol',
         'id_estado',
         'es_urgente',
@@ -25,7 +27,7 @@ class Solicitud extends Model
     ];
 
     protected $casts = [
-        'fecha_sol' => 'date',
+        'fecha_sol'  => 'date',
         'es_urgente' => 'boolean',
     ];
 

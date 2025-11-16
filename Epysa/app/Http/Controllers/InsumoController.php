@@ -49,7 +49,10 @@ class InsumoController extends Controller
             ]);
         }
 
-        return redirect()->route('insumos.index')->with('success', 'Insumo creado correctamente.');
+        // 🔹 Volver al formulario en vez de ir a la lista
+        return redirect()
+            ->route('insumos.create')
+            ->with('success', 'Insumo creado correctamente.');
     }
 
     // ========= IMAGEN =========
@@ -60,7 +63,9 @@ class InsumoController extends Controller
             ->orderByDesc('id_imagen')
             ->first();
 
-        if (!$row || !$row->imagen) abort(404);
+        if (!$row || !$row->imagen) {
+            abort(404);
+        }
 
         $mime = $row->mime ?: 'image/jpeg';
 
@@ -72,16 +77,52 @@ class InsumoController extends Controller
     // ========= LISTADO =========
     public function index(Request $request)
     {
-        $query = Insumo::on('newdb')
-            ->select('id_insumo', 'nombre_insumo', 'stock', 'precio_insumo', 'descripcion_insumo', 'categoria');
+        // Texto de búsqueda
+        $q = trim($request->input('q', ''));
 
-        if ($request->filled('q')) {
-            $q = trim($request->q);
+        // Categorías seleccionadas (puede venir string o array)
+        $selectedCategorias = $request->input('categoria', []);
+        if (!is_array($selectedCategorias)) {
+            $selectedCategorias = [$selectedCategorias];
+        }
+        // Limpiar vacíos
+        $selectedCategorias = array_values(array_filter($selectedCategorias, function ($v) {
+            return $v !== null && $v !== '';
+        }));
+
+        // Orden
+        $sort = $request->input('sort', 'default');
+
+        // Query base
+        $query = Insumo::on('newdb')
+            ->select(
+                'id_insumo',
+                'nombre_insumo',
+                'stock',
+                'precio_insumo',
+                'descripcion_insumo',
+                'categoria',
+                'fecha_creacion'
+            );
+
+        // Filtro por texto
+        if ($q !== '') {
             $query->where('nombre_insumo', 'like', "%{$q}%");
         }
 
-        $query->orderByDesc('id_insumo');
+        // Filtro por categorías
+        if (!empty($selectedCategorias)) {
+            $query->whereIn('categoria', $selectedCategorias);
+        }
 
+        // Orden
+        if ($sort === 'latest') {
+            $query->orderByDesc('fecha_creacion');
+        } else {
+            $query->orderByDesc('id_insumo');
+        }
+
+        // Ejecutar query y mapear con imagen
         $insumos = $query->get()->map(function ($i) {
             $img = DB::connection('newdb')->table('Insumo_Imagen')
                 ->where('id_insumo', $i->id_insumo)
@@ -89,7 +130,7 @@ class InsumoController extends Controller
                 ->orderByDesc('id_imagen')
                 ->first();
 
-            $urlBase = route('insumos.imagen', $i->id_insumo);
+            $urlBase   = route('insumos.imagen', $i->id_insumo);
             $imagenUrl = $img ? ($urlBase . '?v=' . $img->id_imagen) : null;
 
             return [
@@ -103,19 +144,32 @@ class InsumoController extends Controller
             ];
         });
 
+        // Listado de categorías distintas para los chips del sidebar
+        $categorias = DB::connection('newdb')
+            ->table('Insumos')
+            ->whereNotNull('categoria')
+            ->distinct()
+            ->orderBy('categoria')
+            ->pluck('categoria');
+
         return Inertia::render('Insumos/Index', [
-            'insumos' => $insumos,
-            'q'       => $request->q ?? '',
+            'insumos'            => $insumos,
+            'q'                  => $q,
+            'categorias'         => $categorias,
+            'selectedCategorias' => $selectedCategorias,
+            'sort'               => $sort,
         ]);
     }
 
     // ========= EDITAR =========
     public function edit(int $id)
     {
-        $conn = DB::connection('newdb');
+        $conn   = DB::connection('newdb');
         $insumo = $conn->table('Insumos')->where('id_insumo', $id)->first();
 
-        if (!$insumo) abort(404, 'Insumo no encontrado');
+        if (!$insumo) {
+            abort(404, 'Insumo no encontrado');
+        }
 
         $imagen = $conn->table('Insumo_Imagen')
             ->where('id_insumo', $id)
@@ -134,58 +188,59 @@ class InsumoController extends Controller
     }
 
     // ========= ACTUALIZAR =========
-public function update(Request $request, int $id)
-{
-    $data = $request->validate([
-        'nombre_insumo'      => ['required','string','max:150'],
-        'stock'              => ['required','integer','min:0'],
-        'descripcion_insumo' => ['nullable','string'],
-        'precio_insumo'      => ['required','numeric','min:0'],
-        'categoria'          => ['nullable','string','max:100'],
-        'imagen'             => ['nullable','file','image','mimes:jpeg,png,webp,jpg','max:4096'],
-    ]);
-
-    $conn = DB::connection('newdb');
-    $insumoAntes = $conn->table('Insumos')->where('id_insumo', $id)->first();
-
-    if (!$insumoAntes) abort(404, 'Insumo no encontrado');
-
-    $conn->transaction(function () use ($conn, $data, $request, $id, $insumoAntes) {
-
-        $conn->table('Insumos')->where('id_insumo', $id)->update([
-            'nombre_insumo'      => $data['nombre_insumo'],
-            'stock'              => $data['stock'],
-            'descripcion_insumo' => $data['descripcion_insumo'] ?? null,
-            'precio_insumo'      => $data['precio_insumo'],
-            'categoria'          => $data['categoria'] ?? null,
+    public function update(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'nombre_insumo'      => ['required', 'string', 'max:150'],
+            'stock'              => ['required', 'integer', 'min:0'],
+            'descripcion_insumo' => ['nullable', 'string'],
+            'precio_insumo'      => ['required', 'numeric', 'min:0'],
+            'categoria'          => ['nullable', 'string', 'max:100'],
+            'imagen'             => ['nullable', 'file', 'image', 'mimes:jpeg,png,webp,jpg', 'max:4096'],
         ]);
 
-        if ($request->hasFile('imagen')) {
-            $file = $request->file('imagen');
+        $conn         = DB::connection('newdb');
+        $insumoAntes  = $conn->table('Insumos')->where('id_insumo', $id)->first();
 
-            $conn->table('Insumo_Imagen')->where('id_insumo', $id)->delete();
-
-            $conn->table('Insumo_Imagen')->insert([
-                'id_insumo' => $id,
-                'imagen'    => file_get_contents($file->getRealPath()),
-                'mime'      => $file->getMimeType() ?: 'application/octet-stream',
-            ]);
+        if (!$insumoAntes) {
+            abort(404, 'Insumo no encontrado');
         }
 
-        $insumoDespues = $conn->table('Insumos')->where('id_insumo', $id)->first();
+        $conn->transaction(function () use ($conn, $data, $request, $id, $insumoAntes) {
 
-        \App\Models\AuditLog::create([
-            'usuario_id'      => auth()->id(),
-            'accion'          => 'ACTUALIZAR_INSUMO',
-            'valores_antes'   => (array) $insumoAntes,
-            'valores_despues' => (array) $insumoDespues,
-            'created_at'      => now(),
-        ]);
-    });
+            $conn->table('Insumos')->where('id_insumo', $id)->update([
+                'nombre_insumo'      => $data['nombre_insumo'],
+                'stock'              => $data['stock'],
+                'descripcion_insumo' => $data['descripcion_insumo'] ?? null,
+                'precio_insumo'      => $data['precio_insumo'],
+                'categoria'          => $data['categoria'] ?? null,
+            ]);
 
-    return redirect()->route('insumos.index')->with('success', 'Insumo actualizado correctamente.');
-}
+            if ($request->hasFile('imagen')) {
+                $file = $request->file('imagen');
 
+                $conn->table('Insumo_Imagen')->where('id_insumo', $id)->delete();
+
+                $conn->table('Insumo_Imagen')->insert([
+                    'id_insumo' => $id,
+                    'imagen'    => file_get_contents($file->getRealPath()),
+                    'mime'      => $file->getMimeType() ?: 'application/octet-stream',
+                ]);
+            }
+
+            $insumoDespues = $conn->table('Insumos')->where('id_insumo', $id)->first();
+
+            \App\Models\AuditLog::create([
+                'usuario_id'      => auth()->id(),
+                'accion'          => 'ACTUALIZAR_INSUMO',
+                'valores_antes'   => (array) $insumoAntes,
+                'valores_despues' => (array) $insumoDespues,
+                'created_at'      => now(),
+            ]);
+        });
+
+        return redirect()->route('insumos.index')->with('success', 'Insumo actualizado correctamente.');
+    }
 
     // ========= ELIMINAR (guarda en historial) =========
     public function destroy(Request $request, int $id)
@@ -204,8 +259,9 @@ public function update(Request $request, int $id)
 
         // Confirmación por nombre
         $input = (string) $request->input('confirm_name', '');
-        $norm = fn(string $s) => preg_replace('/\s+/u', ' ', trim(mb_strtolower($s, 'UTF-8')));
-        if ($norm($input) === '' || $norm($input) !== $norm((string)$insumo->nombre_insumo)) {
+        $norm  = fn(string $s) => preg_replace('/\s+/u', ' ', trim(mb_strtolower($s, 'UTF-8')));
+
+        if ($norm($input) === '' || $norm($input) !== $norm((string) $insumo->nombre_insumo)) {
             return back()->with('error', 'Debes escribir exactamente el nombre del insumo para confirmar la eliminación.');
         }
 
@@ -242,7 +298,6 @@ public function update(Request $request, int $id)
                     'valores_despues' => null,
                     'created_at'      => now(),
                 ]);
-
 
                 // Borrar insumo
                 $conn->table('Insumos')->where('id_insumo', $id)->delete();

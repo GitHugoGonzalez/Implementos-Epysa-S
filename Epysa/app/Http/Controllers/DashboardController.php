@@ -10,11 +10,12 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Usa los nombres de tablas del nuevo esquema
+        // Conexión (asegúrate que 'newdb' apunta a la BD Epysa)
         $conn = DB::connection('newdb');
 
         // 1) Serie diaria (últimos 30 días)
         $start = Carbon::today()->subDays(29)->toDateString(); // incluye hoy
+
         $rawDaily = $conn->table('Solicitudes')
             ->select('fecha_sol', DB::raw('COUNT(*) as total'))
             ->where('fecha_sol', '>=', $start)
@@ -41,7 +42,7 @@ class DashboardController extends Controller
             ->orderBy('total', 'desc')
             ->get();
 
-        // 3) Top 5 insumos por cantidad (JOIN Insumos)  <<-- FIX
+        // 3) Top 5 insumos por cantidad (JOIN Insumos)
         $topInsumos = $conn->table('Solicitudes as s')
             ->join('Insumos as i', 'i.id_insumo', '=', 's.id_insumo')
             ->select(
@@ -54,7 +55,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // 4) Solicitudes por sucursal (JOIN Sucursal)  <<-- FIX
+        // 4) Solicitudes por sucursal (JOIN Sucursal)
         $bySucursal = $conn->table('Solicitudes as s')
             ->join('Sucursal as su', 'su.id_sucursal', '=', 's.id_sucursal')
             ->where('s.fecha_sol', '>=', $start)
@@ -74,16 +75,39 @@ class DashboardController extends Controller
             ')
             ->first();
 
+        // 6) Top de creación de solicitudes (por usuario)
+        $topCreadores = $conn->table('Solicitudes as s')
+            ->join('Usuarios as u', 'u.id_us', '=', 's.id_us')
+            ->join('Roles as r', 'r.id_rol', '=', 'u.id_rol')
+            ->join('Sucursal as su', 'su.id_sucursal', '=', 'u.id_sucursal')
+            ->select(
+                'u.name as usuario_nombre',
+                'r.nombre_rol as rol',
+                DB::raw("CONCAT(su.ciudad, ' - ', su.direccion) as sucursal_nombre"),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('u.name', 'r.nombre_rol', 'sucursal_nombre')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
         return Inertia::render('Dashboard', [
             'charts' => [
-                'daily'       => $dailySeries,
-                'byEstado'    => $byEstado,
-                'topInsumos'  => $topInsumos,
-                'bySucursal'  => $bySucursal,
-                'urgency'     => [
-                    ['tipo' => 'Urgentes',    'total' => (int)($urgentes->urgentes ?? 0)],
-                    ['tipo' => 'No urgentes', 'total' => (int)($urgentes->no_urgentes ?? 0)],
+                'daily'        => $dailySeries,
+                'byEstado'     => $byEstado,
+                'topInsumos'   => $topInsumos,
+                'bySucursal'   => $bySucursal,
+                'urgency'      => [
+                    [
+                        'tipo'  => 'Urgentes',
+                        'total' => (int)($urgentes->urgentes ?? 0),
+                    ],
+                    [
+                        'tipo'  => 'No urgentes',
+                        'total' => (int)($urgentes->no_urgentes ?? 0),
+                    ],
                 ],
+                'topCreadores' => $topCreadores,
             ],
         ]);
     }
