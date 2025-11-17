@@ -276,6 +276,7 @@ export default function SimpleNav() {
                                 as="button"
                                 className="text-gray-800"
                             >
+                                
                                 Cerrar Sesión
                             </ResponsiveNavLink>
                         </div>
@@ -369,6 +370,16 @@ export default function SimpleNav() {
                                     >
                                         Gestionar usuarios
                                     </Link>
+
+                                    <Link
+                                        href={route("auditoria.index")}
+                                        className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsSideOpen(false)}
+                                    >
+                                        Auditoría del sistema
+                                    </Link>
+
+
                                 </>
                             )}
 
