@@ -342,9 +342,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             {isJefe && (
                                 <>
                                     <Link
-                                        href={safeRoute(
-                                            "admin.users.create"
-                                        )}
+                                        href={safeRoute("admin.users.create")}
                                         className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
                                         onClick={() => setIsSideOpen(false)}
                                     >
@@ -369,7 +367,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                     >
                                         Auditoría del sistema
                                     </Link>
-
                                 </>
                             )}
 

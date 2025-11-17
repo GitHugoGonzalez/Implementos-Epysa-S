@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html {
+  /* 1. Fuerza el espacio para evitar el salto */
+  overflow-y: scroll; 
+}
+
+body {
+  /* 2. Asegura que el body ocupe todo el espacio disponible */
+  width: 100%;
+  min-height: 100vh; /* Para asegurar que el body baje hasta el fondo */
+}
+
