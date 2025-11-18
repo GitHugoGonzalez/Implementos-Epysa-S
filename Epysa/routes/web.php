@@ -104,9 +104,14 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('id')->name('insumos.destroy');
 
     //AUDITORIA
-    Route::get('/auditoria', [AuditoriaController::class, 'index'])
-    ->name('auditoria.index')
-    ->middleware('auth');
+    Route::middleware(['auth'])->group(function () {
+    Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
+
+    // Endpoints AJAX para combos dependientes
+    Route::get('/auditoria/opciones/roles',     [AuditoriaController::class, 'opcionesRoles'])->name('auditoria.opciones.roles');
+    Route::get('/auditoria/opciones/usuarios',  [AuditoriaController::class, 'opcionesUsuarios'])->name('auditoria.opciones.usuarios');
+    Route::get('/auditoria/opciones/acciones',  [AuditoriaController::class, 'opcionesAcciones'])->name('auditoria.opciones.acciones');
+    });
 });
 
 require __DIR__.'/auth.php';
