@@ -23,12 +23,4 @@ class AuditLog extends Model
         'valores_antes' => 'array',
         'valores_despues' => 'array'
     ];
-
-    // =========================================================
-    // RELACIONES
-    // =========================================================
-    public function usuario()
-    {
-        return $this->belongsTo(User::class, 'usuario_id', 'id_us');
-    }
 }

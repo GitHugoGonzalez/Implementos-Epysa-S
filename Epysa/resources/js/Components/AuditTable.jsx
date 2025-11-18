@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Paper, IconButton, Collapse, Box, Typography
@@ -6,73 +6,95 @@ import {
 
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import AuditDiff from "@/Components/AuditDiff";
-import { getActionLabel } from "@/Utils/AuditLabels";
 
-function AuditRow({ row }) {
+import { translateAuditChanges } from "@/Utils/auditTranslate";
+
+function Row({ row, rolesCatalogo, sucursalesCatalogo }) {
     const [open, setOpen] = React.useState(false);
 
+    const cambios = translateAuditChanges(
+        row.valores_antes,
+        row.valores_despues,
+        rolesCatalogo,
+        sucursalesCatalogo
+    );
+
     return (
-        <React.Fragment>
-            {/* Fila principal */}
-            <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
-                <TableCell>
+        <>
+            <TableRow hover>
+                <TableCell padding="checkbox">
                     <IconButton size="small" onClick={() => setOpen(!open)}>
                         {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                     </IconButton>
                 </TableCell>
 
                 <TableCell>{new Date(row.created_at).toLocaleString()}</TableCell>
-                <TableCell>{row.usuario_nombre || "—"}</TableCell>
-                <TableCell>{getActionLabel(row.accion)}</TableCell>
+                <TableCell>{row.usuario_nombre}</TableCell>
+                <TableCell>{row.sucursal_nombre ?? "—"}</TableCell>
+                <TableCell>{row.accion}</TableCell>
             </TableRow>
 
-            {/* Fila expandible */}
             <TableRow>
-                <TableCell colSpan={4} sx={{ paddingBottom: 0, paddingTop: 0 }}>
+                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
                     <Collapse in={open} timeout="auto" unmountOnExit>
                         <Box sx={{ margin: 2 }}>
-                            <Typography variant="subtitle1" gutterBottom>
-                                Detalle del cambio
-                            </Typography>
+                            <Typography variant="h6">Cambios realizados</Typography>
 
-                            <AuditDiff
-                                before={row.valores_antes || {}}
-                                after={row.valores_despues || {}}
-                            />
+                            <Table size="small">
+                                <TableBody>
+                                    {cambios.length === 0 && (
+                                        <TableRow>
+                                            <TableCell>No hubo modificaciones relevantes.</TableCell>
+                                        </TableRow>
+                                    )}
+
+                                    {cambios.map((c, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell width="25%" sx={{ fontWeight: "bold" }}>
+                                                {c.campo}
+                                            </TableCell>
+                                            <TableCell width="35%" sx={{ color: "gray" }}>
+                                                {c.antes}
+                                            </TableCell>
+                                            <TableCell width="5%" align="center">→</TableCell>
+                                            <TableCell width="35%" sx={{ fontWeight: "bold" }}>
+                                                {c.despues}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </Box>
                     </Collapse>
                 </TableCell>
             </TableRow>
-        </React.Fragment>
+        </>
     );
 }
 
-export default function AuditTable({ logs }) {
+export default function AuditTable({ logs, rolesCatalogo, sucursalesCatalogo }) {
     return (
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 3 }}>
+        <TableContainer component={Paper}>
             <Table>
                 <TableHead>
                     <TableRow>
                         <TableCell />
                         <TableCell>Fecha</TableCell>
                         <TableCell>Usuario</TableCell>
+                        <TableCell>Sucursal</TableCell>
                         <TableCell>Acción</TableCell>
                     </TableRow>
                 </TableHead>
 
                 <TableBody>
-                    {logs.data.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                                No hay registros de auditoría.
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        logs.data.map((row) => (
-                            <AuditRow key={row.id_audit} row={row} />
-                        ))
-                    )}
+                    {logs.data.map((l) => (
+                        <Row
+                            key={l.id_audit}
+                            row={l}
+                            rolesCatalogo={rolesCatalogo}
+                            sucursalesCatalogo={sucursalesCatalogo}
+                        />
+                    ))}
                 </TableBody>
             </Table>
         </TableContainer>

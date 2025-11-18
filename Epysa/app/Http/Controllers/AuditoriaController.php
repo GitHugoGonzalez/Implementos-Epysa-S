@@ -67,6 +67,7 @@ class AuditoriaController extends Controller
             )
             ->orderBy('ciudad')
             ->get();
+            
 
         return Inertia::render('Auditoria/Index', [
             'logs' => $logs,

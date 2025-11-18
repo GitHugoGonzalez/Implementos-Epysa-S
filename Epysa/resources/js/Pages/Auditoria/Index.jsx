@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import AuditDiff from "@/Components/AuditDiff";
 import SimpleNav from "@/Components/SimpleNav";
+import AuditDiff from "@/Components/AuditDiff";
+import AuditTable from "@/Components/AuditTable";
 import { getActionLabel } from "@/Utils/AuditLabels";
+
+import {
+    Box,
+    Grid,
+    TextField,
+    Paper,
+    Button,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Select,
+} from "@mui/material";
+
+import SearchIcon from "@mui/icons-material/Search";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import ClearAllIcon from "@mui/icons-material/ClearAll";
+
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import InputAdornment from "@mui/material/InputAdornment";
 
 export default function AuditoriaIndex() {
     const {
@@ -11,13 +33,14 @@ export default function AuditoriaIndex() {
         sucursales = [],
     } = usePage().props;
 
+    // ================= ESTADOS =================
     const [q, setQ] = useState(filtros.q ?? "");
     const [accion, setAccion] = useState(filtros.accion ?? "");
     const [usuario, setUsuario] = useState(filtros.usuario_id ?? "");
     const [desde, setDesde] = useState(filtros.desde ?? "");
     const [hasta, setHasta] = useState(filtros.hasta ?? "");
 
-    // NUEVOS: filtro maestro → sucursal y rol
+    // Filtros dependientes
     const [sucursal, setSucursal] = useState("");
     const [rol, setRol] = useState("");
 
@@ -26,7 +49,7 @@ export default function AuditoriaIndex() {
     const [usuariosOpts, setUsuariosOpts] = useState([]);
     const [accionesOpts, setAccionesOpts] = useState([]);
 
-    // ======================= Helpers =======================
+    // ================= HELPERS =================
     const buildParams = () => {
         const p = {};
         if (q) p.q = q;
@@ -52,7 +75,6 @@ export default function AuditoriaIndex() {
         setDesde("");
         setHasta("");
 
-        // También limpiamos filtros maestros y sus opciones
         setSucursal("");
         setRol("");
         setRoles([]);
@@ -62,9 +84,7 @@ export default function AuditoriaIndex() {
         router.get(route("auditoria.index"), {}, { replace: true });
     };
 
-    // ================== Efectos para combos dependientes ==================
-
-    // 1) Cuando cambia sucursal → cargo roles y reseteo siguientes
+    // =========== AJAX: CARGA ROLES CUANDO CAMBIA SUCURSAL ===========
     useEffect(() => {
         setRol("");
         setUsuario("");
@@ -75,19 +95,13 @@ export default function AuditoriaIndex() {
 
         if (!sucursal) return;
 
-        const url = route("auditoria.opciones.roles", { sucursal_id: sucursal });
-
-        fetch(url)
-            .then((res) => res.json())
-            .then((data) => {
-                setRoles(data || []);
-            })
-            .catch((err) => {
-                console.error("Error cargando roles:", err);
-            });
+        fetch(route("auditoria.opciones.roles", { sucursal_id: sucursal }))
+            .then(res => res.json())
+            .then(data => setRoles(data || []))
+            .catch(err => console.error("Error roles:", err));
     }, [sucursal]);
 
-    // 2) Cuando cambia rol → cargo usuarios y reseteo usuario + acciones
+    // ========== AJAX: CARGA USUARIOS CUANDO CAMBIA ROL ==========
     useEffect(() => {
         setUsuario("");
         setAccion("");
@@ -96,43 +110,29 @@ export default function AuditoriaIndex() {
 
         if (!sucursal || !rol) return;
 
-        const url = route("auditoria.opciones.usuarios", {
+        fetch(route("auditoria.opciones.usuarios", {
             sucursal_id: sucursal,
             rol_id: rol,
-        });
-
-        fetch(url)
-            .then((res) => res.json())
-            .then((data) => {
-                setUsuariosOpts(data || []);
-            })
-            .catch((err) => {
-                console.error("Error cargando usuarios:", err);
-            });
+        }))
+            .then(res => res.json())
+            .then(data => setUsuariosOpts(data || []))
+            .catch(err => console.error("Error usuarios:", err));
     }, [sucursal, rol]);
 
-    // 3) Cuando cambia usuario → cargo acciones de ese usuario
+    // ========== AJAX: CARGA ACCIONES CUANDO CAMBIA USUARIO ==========
     useEffect(() => {
         setAccion("");
         setAccionesOpts([]);
 
         if (!usuario) return;
 
-        const url = route("auditoria.opciones.acciones", {
-            usuario_id: usuario,
-        });
-
-        fetch(url)
-            .then((res) => res.json())
-            .then((data) => {
-                setAccionesOpts(data || []);
-            })
-            .catch((err) => {
-                console.error("Error cargando acciones:", err);
-            });
+        fetch(route("auditoria.opciones.acciones", { usuario_id: usuario }))
+            .then(res => res.json())
+            .then(data => setAccionesOpts(data || []))
+            .catch(err => console.error("Error acciones:", err));
     }, [usuario]);
 
-    // ======================= Render =======================
+    // ================= RENDER =================
     return (
         <div className="min-h-screen bg-gray-100">
             <Head title="Auditoría del Sistema" />
@@ -140,145 +140,190 @@ export default function AuditoriaIndex() {
 
             <div className="mx-auto mt-7 max-w-7xl px-2 sm:px-6 lg:px-8">
                 <div className="rounded-2xl bg-white p-6 shadow">
+                    <h1 className="text-2xl font-semibold mb-6">Auditoría del Sistema</h1>
 
-                    <h1 className="text-2xl font-semibold mb-6">
-                        Auditoría del Sistema
-                    </h1>
+                    {/* ================= FILTROS ================= */}
+                    <Paper sx={{ p: 3, borderRadius: "18px", mb: 4 }} elevation={3}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-                    {/* ================= Filtros ================= */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
+                            {/* ========================= FILA 1 ========================= */}
+                            <Grid container spacing={3} sx={{ mb: 2 }}>
 
-                        {/* Texto libre */}
-                        <input
-                            type="text"
-                            placeholder="Buscar..."
-                            value={q}
-                            onChange={(e) => setQ(e.target.value)}
-                            className="w-full border rounded-xl px-3 py-2"
-                        />
+                                {/* Buscar (50%) */}
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Buscar"
+                                        variant="outlined"
+                                        value={q}
+                                        onChange={(e) => setQ(e.target.value)}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon color="action" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                        sx={{
+                                            "& .MuiOutlinedInput-input:focus": {
+                                                outline: "none !important",
+                                                boxShadow: "none !important",
+                                            }
+                                        }}
+                                    />
+                                </Grid>
 
-                        {/* Sucursal (PRIMER filtro) */}
-                        <select
-                            value={sucursal}
-                            onChange={(e) => setSucursal(e.target.value)}
-                            className="border rounded-xl px-3 py-2"
-                        >
-                            <option value="">Todas las sucursales</option>
-                            {sucursales.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                    {s.nombre}
-                                </option>
-                            ))}
-                        </select>
+                                {/* Fecha desde (25%) */}
+                                <Grid item xs={12} md={3}>
+                                    <DatePicker
+                                        label="Fecha desde"
+                                        value={desde || null}
+                                        onChange={(val) =>
+                                            setDesde(val?.format("YYYY-MM-DD") || "")
+                                        }
+                                        slotProps={{ textField: { fullWidth: true } }}
+                                    />
+                                </Grid>
 
-                        {/* Rol (segundo filtro, depende de sucursal) */}
-                        <select
-                            value={rol}
-                            onChange={(e) => setRol(e.target.value)}
-                            className="border rounded-xl px-3 py-2"
-                            disabled={!sucursal}
-                        >
-                            <option value="">Todos los roles</option>
-                            {roles.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                    {r.nombre}
-                                </option>
-                            ))}
-                        </select>
+                                {/* Fecha hasta (25%) */}
+                                <Grid item xs={12} md={3}>
+                                    <DatePicker
+                                        label="Fecha hasta"
+                                        value={hasta || null}
+                                        onChange={(val) =>
+                                            setHasta(val?.format("YYYY-MM-DD") || "")
+                                        }
+                                        slotProps={{ textField: { fullWidth: true } }}
+                                    />
+                                </Grid>
 
-                        {/* Usuario (tercer filtro, depende de sucursal + rol) */}
-                        <select
-                            value={usuario}
-                            onChange={(e) => setUsuario(e.target.value)}
-                            className="border rounded-xl px-3 py-2"
-                            disabled={!sucursal || !rol}
-                        >
-                            <option value="">Todos los usuarios</option>
-                            {usuariosOpts.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                    {u.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                            </Grid>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
-                        {/* Acción (cuarto filtro, depende de usuario) */}
-                        <select
-                            value={accion}
-                            onChange={(e) => setAccion(e.target.value)}
-                            className="border rounded-xl px-3 py-2"
-                            disabled={!usuario}
-                        >
-                            <option value="">Todas las acciones</option>
-                            {accionesOpts.map((a) => (
-                                <option key={a} value={a}>
-                                    {getActionLabel(a)}
-                                </option>
-                            ))}
-                        </select>
+                            {/* ========================= FILA 2 ========================= */}
+                            <Grid container spacing={3} sx={{ mb: 2 }}>
 
-                        {/* Fecha desde */}
-                        <div className="flex flex-col">
-                            <label className="text-xs text-gray-600 mb-1">
-                                Fecha desde
-                            </label>
-                            <input
-                                type="date"
-                                value={desde}
-                                onChange={(e) => setDesde(e.target.value)}
-                                className="border rounded-xl px-3 py-2"
-                            />
-                        </div>
+                                {/* Sucursal */}
+                                <Grid item xs={12} md={3}>
+                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                        <InputLabel>Sucursal</InputLabel>
+                                        <Select
+                                            value={sucursal}
+                                            onChange={(e) => setSucursal(e.target.value)}
+                                            label="Sucursal"
+                                        >
+                                            <MenuItem value="">Todas</MenuItem>
+                                            {sucursales.map((s) => (
+                                                <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
 
-                        {/* Fecha hasta */}
-                        <div className="flex flex-col">
-                            <label className="text-xs text-gray-600 mb-1">
-                                Fecha hasta
-                            </label>
-                            <input
-                                type="date"
-                                value={hasta}
-                                onChange={(e) => setHasta(e.target.value)}
-                                className="border rounded-xl px-3 py-2"
-                            />
-                        </div>
+                                {/* Rol */}
+                                <Grid item xs={12} md={3}>
+                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                        <InputLabel>Rol</InputLabel>
+                                        <Select
+                                            value={rol}
+                                            onChange={(e) => setRol(e.target.value)}
+                                            label="Rol"
+                                            disabled={!sucursal}
+                                        >
+                                            <MenuItem value="">Todos</MenuItem>
+                                            {roles.map((r) => (
+                                                <MenuItem key={r.id} value={r.id}>{r.nombre}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
 
-                        {/* Botones */}
-                        <div className="flex gap-2 items-end">
-                            <button
-                                onClick={submitFilters}
-                                className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
-                            >
-                                Filtrar
-                            </button>
+                                {/* Usuario */}
+                                <Grid item xs={12} md={3}>
+                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                        <InputLabel>Usuario</InputLabel>
+                                        <Select
+                                            value={usuario}
+                                            onChange={(e) => setUsuario(e.target.value)}
+                                            label="Usuario"
+                                            disabled={!sucursal || !rol}
+                                        >
+                                            <MenuItem value="">Todos</MenuItem>
+                                            {usuariosOpts.map((u) => (
+                                                <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
 
-                            <button
-                                onClick={resetFilters}
-                                className="flex-1 px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300"
-                            >
-                                Limpiar
-                            </button>
-                        </div>
-                    </div>
+                                {/* Acción */}
+                                <Grid item xs={12} md={3}>
+                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                        <InputLabel>Acción</InputLabel>
+                                        <Select
+                                            value={accion}
+                                            onChange={(e) => setAccion(e.target.value)}
+                                            label="Acción"
+                                            disabled={!usuario}
+                                        >
+                                            <MenuItem value="">Todas</MenuItem>
+                                            {accionesOpts.map((a) => (
+                                                <MenuItem key={a} value={a}>
+                                                    {getActionLabel(a)}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
 
-                    {/* ================= Tabla ================= */}
+                            </Grid>
+
+                            {/* ========================= FILA 3 ========================= */}
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        startIcon={<FilterAltIcon />}
+                                        onClick={submitFilters}
+                                        sx={{ height: "48px", borderRadius: "10px" }}
+                                    >
+                                        FILTRAR
+                                    </Button>
+                                </Grid>
+
+                                <Grid item xs={12} md={6}>
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        color="secondary"
+                                        startIcon={<ClearAllIcon />}
+                                        onClick={resetFilters}
+                                        sx={{ height: "48px", borderRadius: "10px" }}
+                                    >
+                                        LIMPIAR
+                                    </Button>
+                                </Grid>
+                            </Grid>
+
+                        </LocalizationProvider>
+                    </Paper>
+
+                    {/* ================= TABLA ================= */}
                     <div className="overflow-x-auto border rounded-2xl">
                         <table className="min-w-full text-sm">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-3 py-2 text-left">Fecha</th>
-                                    <th className="px-3 py-2 text-left">Usuario</th>
-                                    <th className="px-3 py-2 text-left">Acción</th>
-                                    <th className="px-3 py-2 text-left">Antes / Después</th>
+                                    <th className="px-3 py-2">Fecha</th>
+                                    <th className="px-3 py-2">Usuario</th>
+                                    <th className="px-3 py-2">Acción</th>
+                                    <th className="px-3 py-2">Antes / Después</th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 {logs.data.length === 0 && (
                                     <tr>
                                         <td
-                                            colSpan="4"
+                                            colSpan={4}
                                             className="px-3 py-6 text-center text-gray-500"
                                         >
                                             No hay registros de auditoría.
@@ -287,22 +332,16 @@ export default function AuditoriaIndex() {
                                 )}
 
                                 {logs.data.map((l) => (
-                                    <tr
-                                        key={l.id_audit}
-                                        className="border-t hover:bg-gray-50"
-                                    >
+                                    <tr key={l.id_audit} className="border-t hover:bg-gray-50">
                                         <td className="px-3 py-2">
                                             {new Date(l.created_at).toLocaleString()}
                                         </td>
-
                                         <td className="px-3 py-2">
                                             {l.usuario_nombre || "—"}
                                         </td>
-
                                         <td className="px-3 py-2">
                                             {getActionLabel(l.accion)}
                                         </td>
-
                                         <td className="px-3 py-2">
                                             <AuditDiff
                                                 before={l.valores_antes || {}}
@@ -315,7 +354,7 @@ export default function AuditoriaIndex() {
                         </table>
                     </div>
 
-                    {/* ================= Paginación ================= */}
+                    {/* ================= PAGINACIÓN ================= */}
                     <div className="flex justify-between items-center mt-4">
                         <div className="text-sm text-gray-500">
                             Mostrando {logs.from}–{logs.to} de {logs.total}
@@ -332,17 +371,12 @@ export default function AuditoriaIndex() {
                                         link.active
                                             ? "bg-blue-600 text-white"
                                             : "bg-white hover:bg-gray-50"
-                                    } ${
-                                        !link.url
-                                            ? "pointer-events-none opacity-50"
-                                            : ""
-                                    }`}
+                                    } ${!link.url ? "pointer-events-none opacity-50" : ""}`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ))}
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
