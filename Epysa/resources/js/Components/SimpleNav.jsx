@@ -38,6 +38,9 @@ export default function SimpleNav() {
         roleId === 3 ||
         roleId === 5;
 
+    // Nuevo: operario solo ve "Nueva Solicitud" y "Mi Perfil"
+    const isOperario = roleName.includes("operario");
+
     const isPathActive = (path) =>
         page?.url === path || (page?.url || "").startsWith(path + "/");
 
@@ -80,37 +83,53 @@ export default function SimpleNav() {
                         </div>
 
                         <div className="hidden items-center gap-2 sm:flex">
-                            <NavLink
-                                href={safeRoute("dashboard", "/dashboard")}
-                                active={route().current("dashboard")}
-                                className="!text-white hover:!text-blue-100 font-medium"
-                            >
-                                Dashboard
-                            </NavLink>
+                            {isOperario ? (
+                                <>
+                                    <NavLink
+                                        href="/solicitudes/crear"
+                                        active={isPathActive("/solicitudes/crear")}
+                                        className="!text-white hover:!text-blue-100 font-medium"
+                                    >
+                                        Nueva Solicitud
+                                    </NavLink>
 
-                            <NavLink
-                                href="/insumos/index"
-                                active={isPathActive("/insumos/index")}
-                                className="!text-white hover:!text-blue-100 font-medium"
-                            >
-                                Ver Insumos
-                            </NavLink>
+                                   
+                                </>
+                            ) : (
+                                <>
+                                    <NavLink
+                                        href={safeRoute("dashboard", "/dashboard")}
+                                        active={route().current("dashboard")}
+                                        className="!text-white hover:!text-blue-100 font-medium"
+                                    >
+                                        Dashboard
+                                    </NavLink>
 
-                            <NavLink
-                                href="/insumos/crear"
-                                active={isPathActive("/insumos/crear")}
-                                className="!text-white hover:!text-blue-100 font-medium"
-                            >
-                                Agregar Insumo
-                            </NavLink>
+                                    <NavLink
+                                        href="/insumos/index"
+                                        active={isPathActive("/insumos/index")}
+                                        className="!text-white hover:!text-blue-100 font-medium"
+                                    >
+                                        Ver Insumos
+                                    </NavLink>
 
-                            <NavLink
-                                href="/solicitudes/crear"
-                                active={isPathActive("/solicitudes/crear")}
-                                className="!text-white hover:!text-blue-100 font-medium"
-                            >
-                                Nueva Solicitud
-                            </NavLink>
+                                    <NavLink
+                                        href="/insumos/crear"
+                                        active={isPathActive("/insumos/crear")}
+                                        className="!text-white hover:!text-blue-100 font-medium"
+                                    >
+                                        Agregar Insumo
+                                    </NavLink>
+
+                                    <NavLink
+                                        href="/solicitudes/crear"
+                                        active={isPathActive("/solicitudes/crear")}
+                                        className="!text-white hover:!text-blue-100 font-medium"
+                                    >
+                                        Nueva Solicitud
+                                    </NavLink>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -192,53 +211,74 @@ export default function SimpleNav() {
                 }
             >
                 <div className="space-y-1 bg-white pb-3 pt-2">
-                    <ResponsiveNavLink
-                        href={safeRoute("dashboard", "/dashboard")}
-                        active={route().current("dashboard")}
-                        className="text-gray-800"
-                    >
-                        Dashboard
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href="/insumos/index"
-                        active={isPathActive("/insumos/index")}
-                        className="text-gray-800"
-                    >
-                        Ver Insumos
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href="/insumos/crear"
-                        active={isPathActive("/insumos/crear")}
-                        className="text-gray-800"
-                    >
-                        Agregar Insumo
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href="/solicitudes/crear"
-                        active={isPathActive("/solicitudes/crear")}
-                        className="text-gray-800"
-                    >
-                        Nueva Solicitud
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href="/solicitudes/historial"
-                        active={isPathActive("/solicitudes/historial")}
-                        className="text-gray-800"
-                    >
-                        Historial
-                    </ResponsiveNavLink>
+                    {isOperario ? (
+                        <>
+                            <ResponsiveNavLink
+                                href="/solicitudes/crear"
+                                active={isPathActive("/solicitudes/crear")}
+                                className="text-gray-800"
+                            >
+                                Nueva Solicitud
+                            </ResponsiveNavLink>
 
-                    {canManageUsers && (
-                        <ResponsiveNavLink
-                            href={safeRoute(
-                                "admin.users.create",
-                                "/admin/usuarios/crear"
+                            <ResponsiveNavLink
+                                href={route("profile.edit")}
+                                className="text-gray-800"
+                            >
+                                Mi Perfil
+                            </ResponsiveNavLink>
+                        </>
+                    ) : (
+                        <>
+                            <ResponsiveNavLink
+                                href={safeRoute("dashboard", "/dashboard")}
+                                active={route().current("dashboard")}
+                                className="text-gray-800"
+                            >
+                                Dashboard
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href="/insumos/index"
+                                active={isPathActive("/insumos/index")}
+                                className="text-gray-800"
+                            >
+                                Ver Insumos
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href="/insumos/crear"
+                                active={isPathActive("/insumos/crear")}
+                                className="text-gray-800"
+                            >
+                                Agregar Insumo
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href="/solicitudes/crear"
+                                active={isPathActive("/solicitudes/crear")}
+                                className="text-gray-800"
+                            >
+                                Nueva Solicitud
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href="/solicitudes/historial"
+                                active={isPathActive("/solicitudes/historial")}
+                                className="text-gray-800"
+                            >
+                                Historial
+                            </ResponsiveNavLink>
+
+                            {canManageUsers && (
+                                <ResponsiveNavLink
+                                    href={safeRoute(
+                                        "admin.users.create",
+                                        "/admin/usuarios/crear"
+                                    )}
+                                    active={isPathActive("/admin/usuarios/crear")}
+                                    className="text-gray-800"
+                                >
+                                    Crear usuarios
+                                </ResponsiveNavLink>
                             )}
-                            active={isPathActive("/admin/usuarios/crear")}
-                            className="text-gray-800"
-                        >
-                            Crear usuarios
-                        </ResponsiveNavLink>
+                        </>
                     )}
                 </div>
 
@@ -378,8 +418,6 @@ export default function SimpleNav() {
                                     >
                                         Auditoría del sistema
                                     </Link>
-
-
                                 </>
                             )}
 
