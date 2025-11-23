@@ -7,7 +7,6 @@ import {
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
-import { translateAuditChanges } from "@/Utils/auditTranslate";
 
 function Row({ row, rolesCatalogo, sucursalesCatalogo }) {
     const [open, setOpen] = React.useState(false);

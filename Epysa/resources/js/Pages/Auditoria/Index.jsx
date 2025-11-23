@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
 import AuditDiff from "@/Components/AuditDiff";
-import AuditTable from "@/Components/AuditTable";
 import { getActionLabel } from "@/Utils/AuditLabels";
 
 import {
