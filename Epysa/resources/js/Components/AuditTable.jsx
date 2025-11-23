@@ -18,6 +18,9 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 import AuditDiffTable from "@/Components/AuditDiffTable";
 
+// ⬅️ Importamos el diccionario
+import { getActionLabel } from "@/Utils/AuditLabels";
+
 function Row({ row, catalogs }) {
     const [open, setOpen] = React.useState(false);
 
@@ -31,9 +34,18 @@ function Row({ row, catalogs }) {
                     </IconButton>
                 </TableCell>
 
-                <TableCell>{new Date(row.created_at).toLocaleString()}</TableCell>
-                <TableCell>{row.usuario_nombre ?? "—"}</TableCell>
-                <TableCell>{row.accion ?? "—"}</TableCell>
+                <TableCell>
+                    {new Date(row.created_at).toLocaleString()}
+                </TableCell>
+
+                <TableCell>
+                    {row.usuario_nombre ?? "—"}
+                </TableCell>
+
+                {/* ⬇️ Aquí aplicamos la traducción */}
+                <TableCell>
+                    {getActionLabel(row.accion) || "—"}
+                </TableCell>
             </TableRow>
 
             {/* FILA EXPANDIBLE */}
@@ -66,7 +78,7 @@ export default function AuditTable({
     estadosCatalogo = [],
     insumosCatalogo = [],
 }) {
-    // agrupamos los catálogos en un solo objeto para pasarlo al hijo
+    // agrupamos los catálogos en un solo objeto
     const catalogs = {
         rolesCatalogo,
         usuariosCatalogo,
