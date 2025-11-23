@@ -117,17 +117,16 @@ class SolicitudAprobadaController extends Controller
 
             $sol->save();
 
-            $sol->audit(
-                'APROBAR_SOLICITUD_' . strtoupper($rol),
-                 $sol->getOriginal(),
-                $sol->getChanges()
-            );
+            $before = $sol->getOriginal();
+            $sol->save();
+            $after = $sol->getChanges();
 
             $sol->audit(
-                'RECHAZAR_SOLICITUD_' . strtoupper($rol),
-                $sol->getOriginal(),
-                $sol->getChanges()
+                'APROBAR_SOLICITUD_' . strtoupper($rol),
+                $before,
+                $after
             );
+
 
             DB::connection('newdb')->table('Aprobaciones')->insert([
                 'id_solicitud'    => $sol->id_solicitud,
