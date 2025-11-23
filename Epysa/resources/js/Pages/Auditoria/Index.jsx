@@ -25,6 +25,8 @@ import InputAdornment from "@mui/material/InputAdornment";
 import { getActionLabel } from "@/Utils/AuditLabels";
 import AuditTable from "@/Components/AuditTable";
 
+import dayjs from "dayjs";
+
 export default function AuditoriaIndex() {
 
     const {
@@ -42,8 +44,13 @@ export default function AuditoriaIndex() {
     const [q, setQ] = useState(filtros.q ?? "");
     const [accion, setAccion] = useState(filtros.accion ?? "");
     const [usuario, setUsuario] = useState(filtros.usuario_id ?? "");
-    const [desde, setDesde] = useState(filtros.desde ?? "");
-    const [hasta, setHasta] = useState(filtros.hasta ?? "");
+    const [desde, setDesde] = useState(
+        filtros.desde ? dayjs(filtros.desde) : null
+    );
+
+    const [hasta, setHasta] = useState(
+        filtros.hasta ? dayjs(filtros.hasta) : null
+    );
 
     // Filtros dependientes
     const [sucursal, setSucursal] = useState("");
@@ -60,8 +67,9 @@ export default function AuditoriaIndex() {
         if (q) p.q = q;
         if (accion) p.accion = accion;
         if (usuario) p.usuario_id = usuario;
-        if (desde) p.desde = desde;
-        if (hasta) p.hasta = hasta;
+        if (desde) p.desde = desde.format("YYYY-MM-DD");
+        if (hasta) p.hasta = hasta.format("YYYY-MM-DD");
+
         return p;
     };
 
@@ -176,10 +184,8 @@ export default function AuditoriaIndex() {
                                 <Grid item xs={12} md={3}>
                                     <DatePicker
                                         label="Fecha desde"
-                                        value={desde || null}
-                                        onChange={(val) =>
-                                            setDesde(val?.format("YYYY-MM-DD") || "")
-                                        }
+                                        value={desde}
+                                        onChange={(val) => setDesde(val)}
                                         slotProps={{ textField: { fullWidth: true } }}
                                     />
                                 </Grid>
@@ -187,10 +193,8 @@ export default function AuditoriaIndex() {
                                 <Grid item xs={12} md={3}>
                                     <DatePicker
                                         label="Fecha hasta"
-                                        value={hasta || null}
-                                        onChange={(val) =>
-                                            setHasta(val?.format("YYYY-MM-DD") || "")
-                                        }
+                                        value={hasta}
+                                        onChange={(val) => setHasta(val)}
                                         slotProps={{ textField: { fullWidth: true } }}
                                     />
                                 </Grid>
