@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
-import AuditDiff from "@/Components/AuditDiff";
-import { getActionLabel } from "@/Utils/AuditLabels";
 
 import {
-    Box,
     Grid,
     TextField,
     Paper,
@@ -25,11 +22,20 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import InputAdornment from "@mui/material/InputAdornment";
 
+import { getActionLabel } from "@/Utils/AuditLabels";
+import AuditTable from "@/Components/AuditTable";
+
 export default function AuditoriaIndex() {
+
     const {
         logs = { data: [], links: [], from: 0, to: 0, total: 0 },
         filtros = {},
-        sucursales = [],
+        sucursales = [],          // PARA FILTROS
+        rolesCatalogo = [],       // PARA AUDIT TABLE
+        usuariosCatalogo = [],    // PARA AUDIT TABLE
+        sucCatalogo = [],         // <- NOMBRE CORRECTO
+        estadosCatalogo = [],
+        insumosCatalogo = [],
     } = usePage().props;
 
     // ================= ESTADOS =================
@@ -83,7 +89,7 @@ export default function AuditoriaIndex() {
         router.get(route("auditoria.index"), {}, { replace: true });
     };
 
-    // =========== AJAX: CARGA ROLES CUANDO CAMBIA SUCURSAL ===========
+    // =========== AJAX: Roles cuando cambia sucursal =============
     useEffect(() => {
         setRol("");
         setUsuario("");
@@ -95,12 +101,11 @@ export default function AuditoriaIndex() {
         if (!sucursal) return;
 
         fetch(route("auditoria.opciones.roles", { sucursal_id: sucursal }))
-            .then(res => res.json())
-            .then(data => setRoles(data || []))
-            .catch(err => console.error("Error roles:", err));
+            .then((res) => res.json())
+            .then((data) => setRoles(data || []));
     }, [sucursal]);
 
-    // ========== AJAX: CARGA USUARIOS CUANDO CAMBIA ROL ==========
+    // ========== AJAX: Usuarios cuando cambia rol ==========
     useEffect(() => {
         setUsuario("");
         setAccion("");
@@ -113,12 +118,11 @@ export default function AuditoriaIndex() {
             sucursal_id: sucursal,
             rol_id: rol,
         }))
-            .then(res => res.json())
-            .then(data => setUsuariosOpts(data || []))
-            .catch(err => console.error("Error usuarios:", err));
+            .then((res) => res.json())
+            .then((data) => setUsuariosOpts(data || []));
     }, [sucursal, rol]);
 
-    // ========== AJAX: CARGA ACCIONES CUANDO CAMBIA USUARIO ==========
+    // ========== AJAX: Acciones cuando cambia usuario ==========
     useEffect(() => {
         setAccion("");
         setAccionesOpts([]);
@@ -126,9 +130,8 @@ export default function AuditoriaIndex() {
         if (!usuario) return;
 
         fetch(route("auditoria.opciones.acciones", { usuario_id: usuario }))
-            .then(res => res.json())
-            .then(data => setAccionesOpts(data || []))
-            .catch(err => console.error("Error acciones:", err));
+            .then((res) => res.json())
+            .then((data) => setAccionesOpts(data || []));
     }, [usuario]);
 
     // ================= RENDER =================
@@ -145,10 +148,7 @@ export default function AuditoriaIndex() {
                     <Paper sx={{ p: 3, borderRadius: "18px", mb: 4 }} elevation={3}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-                            {/* ========================= FILA 1 ========================= */}
                             <Grid container spacing={3} sx={{ mb: 2 }}>
-
-                                {/* Buscar (50%) */}
                                 <Grid item xs={12} md={6}>
                                     <TextField
                                         fullWidth
@@ -163,16 +163,9 @@ export default function AuditoriaIndex() {
                                                 </InputAdornment>
                                             ),
                                         }}
-                                        sx={{
-                                            "& .MuiOutlinedInput-input:focus": {
-                                                outline: "none !important",
-                                                boxShadow: "none !important",
-                                            }
-                                        }}
                                     />
                                 </Grid>
 
-                                {/* Fecha desde (25%) */}
                                 <Grid item xs={12} md={3}>
                                     <DatePicker
                                         label="Fecha desde"
@@ -184,7 +177,6 @@ export default function AuditoriaIndex() {
                                     />
                                 </Grid>
 
-                                {/* Fecha hasta (25%) */}
                                 <Grid item xs={12} md={3}>
                                     <DatePicker
                                         label="Fecha hasta"
@@ -195,15 +187,11 @@ export default function AuditoriaIndex() {
                                         slotProps={{ textField: { fullWidth: true } }}
                                     />
                                 </Grid>
-
                             </Grid>
 
-                            {/* ========================= FILA 2 ========================= */}
                             <Grid container spacing={3} sx={{ mb: 2 }}>
-
-                                {/* Sucursal */}
                                 <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Sucursal</InputLabel>
                                         <Select
                                             value={sucursal}
@@ -212,15 +200,16 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todas</MenuItem>
                                             {sucursales.map((s) => (
-                                                <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
+                                                <MenuItem key={s.id} value={s.id}>
+                                                    {s.nombre}
+                                                </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
-                                {/* Rol */}
                                 <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Rol</InputLabel>
                                         <Select
                                             value={rol}
@@ -230,15 +219,16 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todos</MenuItem>
                                             {roles.map((r) => (
-                                                <MenuItem key={r.id} value={r.id}>{r.nombre}</MenuItem>
+                                                <MenuItem key={r.id} value={r.id}>
+                                                    {r.nombre}
+                                                </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
-                                {/* Usuario */}
                                 <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Usuario</InputLabel>
                                         <Select
                                             value={usuario}
@@ -248,15 +238,16 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todos</MenuItem>
                                             {usuariosOpts.map((u) => (
-                                                <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                                                <MenuItem key={u.id} value={u.id}>
+                                                    {u.name}
+                                                </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
-                                {/* Acción */}
                                 <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Acción</InputLabel>
                                         <Select
                                             value={accion}
@@ -273,10 +264,8 @@ export default function AuditoriaIndex() {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-
                             </Grid>
 
-                            {/* ========================= FILA 3 ========================= */}
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={6}>
                                     <Button
@@ -284,7 +273,7 @@ export default function AuditoriaIndex() {
                                         variant="contained"
                                         startIcon={<FilterAltIcon />}
                                         onClick={submitFilters}
-                                        sx={{ height: "48px", borderRadius: "10px" }}
+                                        sx={{ height: "48px" }}
                                     >
                                         FILTRAR
                                     </Button>
@@ -297,61 +286,24 @@ export default function AuditoriaIndex() {
                                         color="secondary"
                                         startIcon={<ClearAllIcon />}
                                         onClick={resetFilters}
-                                        sx={{ height: "48px", borderRadius: "10px" }}
+                                        sx={{ height: "48px" }}
                                     >
                                         LIMPIAR
                                     </Button>
                                 </Grid>
                             </Grid>
-
                         </LocalizationProvider>
                     </Paper>
 
                     {/* ================= TABLA ================= */}
-                    <div className="overflow-x-auto border rounded-2xl">
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-3 py-2">Fecha</th>
-                                    <th className="px-3 py-2">Usuario</th>
-                                    <th className="px-3 py-2">Acción</th>
-                                    <th className="px-3 py-2">Antes / Después</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {logs.data.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="px-3 py-6 text-center text-gray-500"
-                                        >
-                                            No hay registros de auditoría.
-                                        </td>
-                                    </tr>
-                                )}
-
-                                {logs.data.map((l) => (
-                                    <tr key={l.id_audit} className="border-t hover:bg-gray-50">
-                                        <td className="px-3 py-2">
-                                            {new Date(l.created_at).toLocaleString()}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            {l.usuario_nombre || "—"}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            {getActionLabel(l.accion)}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            <AuditDiff
-                                                before={l.valores_antes || {}}
-                                                after={l.valores_despues || {}}
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <AuditTable
+                        logs={logs}
+                        rolesCatalogo={rolesCatalogo}
+                        usuariosCatalogo={usuariosCatalogo}
+                        sucursalesCatalogo={sucCatalogo}
+                        estadosCatalogo={estadosCatalogo}
+                        insumosCatalogo={insumosCatalogo}
+                    />
 
                     {/* ================= PAGINACIÓN ================= */}
                     <div className="flex justify-between items-center mt-4">

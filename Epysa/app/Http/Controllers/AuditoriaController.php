@@ -13,75 +13,95 @@ use Illuminate\Support\Facades\DB;
 class AuditoriaController extends Controller
 {
     public function index(Request $request)
-    {
-        // Protección Jefe
-        if (!auth()->user()->hasRole('jefe')) {
-            abort(403, 'No tienes permiso para acceder a la auditoría.');
-        }
-
-        // ======== Filtros recibidos del frontend ========
-        $q          = trim((string) $request->get('q', ''));
-        $accion     = $request->get('accion') ?: null;
-        $usuario_id = $request->get('usuario_id') ?: null;
-        $desde      = $request->get('desde') ?: null;
-        $hasta      = $request->get('hasta') ?: null;
-
-        // ======== Query base ========
-        $logs = AuditLog::on('newdb')
-            ->select('Auditoria.*', 'Usuarios.name as usuario_nombre')
-            ->leftJoin('Usuarios', 'Usuarios.id_us', '=', 'Auditoria.usuario_id')
-
-            // Filtro general q (texto)
-            ->when($q !== '', function ($query) use ($q) {
-                $query->where(function ($sub) use ($q) {
-                    $sub->where('accion', 'like', "%{$q}%")
-                        ->orWhere('valores_antes', 'like', "%{$q}%")
-                        ->orWhere('valores_despues', 'like', "%{$q}%")
-                        ->orWhereHas('usuario', function ($u) use ($q) {
-                            $u->where('name', 'like', "%{$q}%");
-                        });
-                });
-            })
-
-            // Acción específica
-            ->when($accion, fn($q2) => $q2->where('accion', $accion))
-
-            // Usuario
-            ->when($usuario_id, fn($q2) => $q2->where('usuario_id', $usuario_id))
-
-            // Fecha desde
-            ->when($desde, fn($q2) => $q2->whereDate('created_at', '>=', $desde))
-
-            // Fecha hasta
-            ->when($hasta, fn($q2) => $q2->whereDate('created_at', '<=', $hasta))
-
-            ->orderBy('id_audit', 'desc')
-            ->paginate(15)
-            ->withQueryString();
-
-        // Sucursales para el primer filtro (cargadas una sola vez)
-        $sucursales = Sucursal::on('newdb')
-            ->select(
-                DB::raw('id_sucursal as id'),
-                DB::raw("CONCAT(ciudad, ' - ', direccion) as nombre")
-            )
-            ->orderBy('ciudad')
-            ->get();
-            
-
-        return Inertia::render('Auditoria/Index', [
-            'logs' => $logs,
-            'filtros' => [
-                'q'          => $q,
-                'accion'     => $accion,
-                'usuario_id' => $usuario_id,
-                'desde'      => $desde,
-                'hasta'      => $hasta,
-            ],
-            // Solo necesitamos sucursales aquí, lo demás se obtiene vía AJAX
-            'sucursales' => $sucursales,
-        ]);
+{
+    if (!auth()->user()->hasRole('jefe')) {
+        abort(403, 'No tienes permiso para acceder a la auditoría.');
     }
+
+    // ===== Filtros =====
+    $q          = trim((string) $request->get('q', ''));
+    $accion     = $request->get('accion') ?: null;
+    $usuario_id = $request->get('usuario_id') ?: null;
+    $desde      = $request->get('desde') ?: null;
+    $hasta      = $request->get('hasta') ?: null;
+
+    // ===== Query auditoría =====
+    $logs = AuditLog::on('newdb')
+        ->select('Auditoria.*', 'Usuarios.name as usuario_nombre')
+        ->leftJoin('Usuarios', 'Usuarios.id_us', '=', 'Auditoria.usuario_id')
+        ->when($q !== '', function ($query) use ($q) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('accion', 'like', "%{$q}%")
+                    ->orWhere('valores_antes', 'like', "%{$q}%")
+                    ->orWhere('valores_despues', 'like', "%{$q}%")
+                    ->orWhereHas('usuario', function ($u) use ($q) {
+                        $u->where('name', 'like', "%{$q}%");
+                    });
+            });
+        })
+        ->when($accion, fn($q2) => $q2->where('accion', $accion))
+        ->when($usuario_id, fn($q2) => $q2->where('usuario_id', $usuario_id))
+        ->when($desde, fn($q2) => $q2->whereDate('created_at', '>=', $desde))
+        ->when($hasta, fn($q2) => $q2->whereDate('created_at', '<=', $hasta))
+        ->orderBy('id_audit', 'desc')
+        ->paginate(15)
+        ->withQueryString();
+
+    // ===== Catálogos =====
+
+    // ROLES
+    $rolesCatalogo = Rol::on('newdb')
+        ->select('id_rol as id', 'nombre_rol as nombre')
+        ->orderBy('nombre_rol')
+        ->get();
+
+    // USUARIOS
+    $usuariosCatalogo = User::on('newdb')
+        ->select('id_us as id', 'name')
+        ->orderBy('name')
+        ->get();
+
+    // SUCURSALES
+    $sucursalesCatalogo = Sucursal::on('newdb')
+        ->select(
+            DB::raw('id_sucursal as id'),
+            DB::raw("CONCAT(ciudad,' - ',direccion) as nombre")
+        )
+        ->orderBy('ciudad')
+        ->get();
+
+    // ESTADOS (tabla correcta)
+    $estadosCatalogo = DB::connection('newdb')
+        ->table('Estado')
+        ->select('id_estado as id', 'desc_estado as nombre')
+        ->get();
+
+    // INSUMOS
+    $insumosCatalogo = DB::connection('newdb')
+        ->table('Insumos')
+        ->select('id_insumo as id', 'nombre_insumo as nombre')
+        ->get();
+
+    return Inertia::render('Auditoria/Index', [
+        'logs' => $logs,
+        'filtros' => [
+            'q'          => $q,
+            'accion'     => $accion,
+            'usuario_id' => $usuario_id,
+            'desde'      => $desde,
+            'hasta'      => $hasta,
+        ],
+
+        'sucursales' => $sucursalesCatalogo,  
+
+        // Catálogos para traducción
+        'rolesCatalogo'      => $rolesCatalogo,
+        'usuariosCatalogo'   => $usuariosCatalogo,
+        'sucCatalogo' => $sucursalesCatalogo,
+        'estadosCatalogo'    => $estadosCatalogo,
+        'insumosCatalogo'    => $insumosCatalogo,
+    ]);
+}
 
     // ================== ENDPOINTS AJAX ==================
 
