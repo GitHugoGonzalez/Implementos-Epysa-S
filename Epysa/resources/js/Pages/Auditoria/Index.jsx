@@ -28,14 +28,13 @@ import AuditTable from "@/Components/AuditTable";
 import dayjs from "dayjs";
 
 export default function AuditoriaIndex() {
-
     const {
         logs = { data: [], links: [], from: 0, to: 0, total: 0 },
         filtros = {},
-        sucursales = [],          // PARA FILTROS
-        rolesCatalogo = [],       // PARA AUDIT TABLE
-        usuariosCatalogo = [],    // PARA AUDIT TABLE
-        sucCatalogo = [],         // <- NOMBRE CORRECTO
+        sucursales = [],
+        rolesCatalogo = [],
+        usuariosCatalogo = [],
+        sucCatalogo = [],
         estadosCatalogo = [],
         insumosCatalogo = [],
     } = usePage().props;
@@ -44,6 +43,7 @@ export default function AuditoriaIndex() {
     const [q, setQ] = useState(filtros.q ?? "");
     const [accion, setAccion] = useState(filtros.accion ?? "");
     const [usuario, setUsuario] = useState(filtros.usuario_id ?? "");
+
     const [desde, setDesde] = useState(
         filtros.desde ? dayjs(filtros.desde) : null
     );
@@ -52,11 +52,9 @@ export default function AuditoriaIndex() {
         filtros.hasta ? dayjs(filtros.hasta) : null
     );
 
-    // Filtros dependientes
     const [sucursal, setSucursal] = useState("");
     const [rol, setRol] = useState("");
 
-    // Opciones dinámicas
     const [roles, setRoles] = useState([]);
     const [usuariosOpts, setUsuariosOpts] = useState([]);
     const [accionesOpts, setAccionesOpts] = useState([]);
@@ -69,7 +67,6 @@ export default function AuditoriaIndex() {
         if (usuario) p.usuario_id = usuario;
         if (desde) p.desde = desde.format("YYYY-MM-DD");
         if (hasta) p.hasta = hasta.format("YYYY-MM-DD");
-
         return p;
     };
 
@@ -85,19 +82,17 @@ export default function AuditoriaIndex() {
         setQ("");
         setAccion("");
         setUsuario("");
-        setDesde("");
-        setHasta("");
-
+        setDesde(null);
+        setHasta(null);
         setSucursal("");
         setRol("");
         setRoles([]);
         setUsuariosOpts([]);
         setAccionesOpts([]);
-
         router.get(route("auditoria.index"), {}, { replace: true });
     };
 
-    // =========== AJAX: Roles cuando cambia sucursal =============
+    // ========= AJAX dinámico =========
     useEffect(() => {
         setRol("");
         setUsuario("");
@@ -113,7 +108,6 @@ export default function AuditoriaIndex() {
             .then((data) => setRoles(data || []));
     }, [sucursal]);
 
-    // ========== AJAX: Usuarios cuando cambia rol ==========
     useEffect(() => {
         setUsuario("");
         setAccion("");
@@ -122,15 +116,16 @@ export default function AuditoriaIndex() {
 
         if (!sucursal || !rol) return;
 
-        fetch(route("auditoria.opciones.usuarios", {
-            sucursal_id: sucursal,
-            rol_id: rol,
-        }))
+        fetch(
+            route("auditoria.opciones.usuarios", {
+                sucursal_id: sucursal,
+                rol_id: rol,
+            })
+        )
             .then((res) => res.json())
             .then((data) => setUsuariosOpts(data || []));
     }, [sucursal, rol]);
 
-    // ========== AJAX: Acciones cuando cambia usuario ==========
     useEffect(() => {
         setAccion("");
         setAccionesOpts([]);
@@ -153,11 +148,29 @@ export default function AuditoriaIndex() {
                     <h1 className="text-2xl font-semibold mb-6">Auditoría del Sistema</h1>
 
                     {/* ================= FILTROS ================= */}
-                    <Paper sx={{ p: 3, borderRadius: "18px", mb: 4 }} elevation={3}>
+                    <Paper 
+                        sx={{ 
+                            p: 3, 
+                            borderRadius: "18px", 
+                            mb: 4, 
+                            width: "100%" 
+                        }} 
+                        elevation={3}
+                    >
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-                            <Grid container spacing={3} sx={{ mb: 2 }}>
-                                <Grid item xs={12} md={6}>
+                            {/* FILA 1 - Buscar + Fechas */}
+                            <Grid 
+                                container 
+                                spacing={3} 
+                                sx={{ 
+                                    mb: 2, 
+                                    width: "100%", 
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(3, 1fr)"
+                                }}
+                            >
+                                <Grid item xs={12}>
                                     <TextField
                                         fullWidth
                                         label="Buscar"
@@ -181,7 +194,7 @@ export default function AuditoriaIndex() {
 
                                 </Grid>
 
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <DatePicker
                                         label="Fecha desde"
                                         value={desde}
@@ -190,7 +203,7 @@ export default function AuditoriaIndex() {
                                     />
                                 </Grid>
 
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <DatePicker
                                         label="Fecha hasta"
                                         value={hasta}
@@ -200,8 +213,18 @@ export default function AuditoriaIndex() {
                                 </Grid>
                             </Grid>
 
-                            <Grid container spacing={3} sx={{ mb: 2 }}>
-                                <Grid item xs={12} md={3}>
+                            {/* FILA 2 - Sucursal / Rol / Usuario / Acción */}
+                            <Grid 
+                                container 
+                                spacing={3} 
+                                sx={{ 
+                                    mb: 3,
+                                    width: "100%",
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(4, 1fr)" 
+                                }}
+                            >
+                                <Grid item xs={12}>
                                     <FormControl fullWidth>
                                         <InputLabel>Sucursal</InputLabel>
                                         <Select
@@ -211,15 +234,13 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todas</MenuItem>
                                             {sucursales.map((s) => (
-                                                <MenuItem key={s.id} value={s.id}>
-                                                    {s.nombre}
-                                                </MenuItem>
+                                                <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <FormControl fullWidth>
                                         <InputLabel>Rol</InputLabel>
                                         <Select
@@ -230,15 +251,13 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todos</MenuItem>
                                             {roles.map((r) => (
-                                                <MenuItem key={r.id} value={r.id}>
-                                                    {r.nombre}
-                                                </MenuItem>
+                                                <MenuItem key={r.id} value={r.id}>{r.nombre}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <FormControl fullWidth>
                                         <InputLabel>Usuario</InputLabel>
                                         <Select
@@ -249,15 +268,13 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todos</MenuItem>
                                             {usuariosOpts.map((u) => (
-                                                <MenuItem key={u.id} value={u.id}>
-                                                    {u.name}
-                                                </MenuItem>
+                                                <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <FormControl fullWidth>
                                         <InputLabel>Acción</InputLabel>
                                         <Select
@@ -268,43 +285,51 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todas</MenuItem>
                                             {accionesOpts.map((a) => (
-                                                <MenuItem key={a} value={a}>
-                                                    {getActionLabel(a)}
-                                                </MenuItem>
+                                                <MenuItem key={a} value={a}>{getActionLabel(a)}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
                             </Grid>
 
-                            <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
-                                    <Button
-                                        fullWidth
-                                        variant="contained"
-                                        startIcon={<FilterAltIcon />}
-                                        onClick={submitFilters}
-                                        sx={{ height: "48px" }}
-                                    >
-                                        FILTRAR
-                                    </Button>
-                                </Grid>
+                            {/* FILA 3 - Botones */}
+                            <Grid 
+                                container 
+                                spacing={2} 
+                                sx={{
+                                    width: "100%",
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr"
+                                }}
+                            >
+                                <Button
+                                    fullWidth
+                                    variant="contained"
+                                    startIcon={<FilterAltIcon />}
+                                    onClick={submitFilters}
+                                    sx={{ height: "48px" }}
+                                >
+                                    FILTRAR
+                                </Button>
 
-                                <Grid item xs={12} md={6}>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        color="secondary"
-                                        startIcon={<ClearAllIcon />}
-                                        onClick={resetFilters}
-                                        sx={{ height: "48px" }}
-                                    >
-                                        LIMPIAR
-                                    </Button>
-                                </Grid>
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    color="secondary"
+                                    startIcon={<ClearAllIcon />}
+                                    onClick={resetFilters}
+                                    sx={{ height: "48px" }}
+                                >
+                                    LIMPIAR
+                                </Button>
                             </Grid>
+
                         </LocalizationProvider>
                     </Paper>
+
+
+
+
 
                     {/* ================= TABLA ================= */}
                     <AuditTable
@@ -339,6 +364,7 @@ export default function AuditoriaIndex() {
                             ))}
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
