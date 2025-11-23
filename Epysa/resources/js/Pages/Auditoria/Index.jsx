@@ -16,6 +16,8 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
+import Pagination from "@mui/material/Pagination";
+import Stack from "@mui/material/Stack";
 
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -342,29 +344,25 @@ export default function AuditoriaIndex() {
                     />
 
                     {/* ================= PAGINACIÓN ================= */}
-                    <div className="flex justify-between items-center mt-4">
+                    {/* ================= PAGINACIÓN MUI ================= */}
+                    <div className="flex justify-between items-center mt-6">
                         <div className="text-sm text-gray-500">
                             Mostrando {logs.from}–{logs.to} de {logs.total}
                         </div>
 
-                        <div className="flex gap-2">
-                            {logs.links.map((link, i) => (
-                                <Link
-                                    key={i}
-                                    href={link.url || "#"}
-                                    preserveScroll
-                                    preserveState
-                                    className={`px-3 py-1 rounded-lg border ${
-                                        link.active
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-white hover:bg-gray-50"
-                                    } ${!link.url ? "pointer-events-none opacity-50" : ""}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
-                        </div>
+                        <Pagination
+                            color="primary"
+                            shape="rounded"
+                            count={logs.last_page}
+                            page={logs.current_page}
+                            onChange={(e, page) => {
+                                router.get(route("auditoria.index"), { ...filtros, page }, {
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                });
+                            }}
+                        />
                     </div>
-
                 </div>
             </div>
         </div>
