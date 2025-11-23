@@ -163,7 +163,14 @@ export default function AuditoriaIndex() {
                                                 </InputAdornment>
                                             ),
                                         }}
+                                        sx={{
+                                            "& .MuiOutlinedInput-input:focus": {
+                                                outline: "none !important",
+                                                boxShadow: "none !important",
+                                            }
+                                        }}
                                     />
+
                                 </Grid>
 
                                 <Grid item xs={12} md={3}>
