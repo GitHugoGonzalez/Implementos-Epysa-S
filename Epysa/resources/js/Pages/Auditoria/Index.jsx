@@ -355,7 +355,7 @@ export default function AuditoriaIndex() {
                     </div>
 
                     {/* ================= PAGINACIÓN ================= */}
-                    <div className="flex justify-between items-center mt-4">
+                    <div className="flex justify-between items-center mt-6">
                         <div className="text-sm text-gray-500">
                             Mostrando {logs.from}–{logs.to} de {logs.total}
                         </div>
