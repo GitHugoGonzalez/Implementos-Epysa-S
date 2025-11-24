@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
-import AuditDiff from "@/Components/AuditDiff";
-import AuditTable from "@/Components/AuditTable";
-import { getActionLabel } from "@/Utils/AuditLabels";
 
 import {
-    Box,
     Grid,
     TextField,
     Paper,
@@ -20,31 +16,47 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
+import Pagination from "@mui/material/Pagination";
+import Stack from "@mui/material/Stack";
 
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import InputAdornment from "@mui/material/InputAdornment";
 
+import { getActionLabel } from "@/Utils/AuditLabels";
+import AuditTable from "@/Components/AuditTable";
+
+import dayjs from "dayjs";
+
 export default function AuditoriaIndex() {
     const {
         logs = { data: [], links: [], from: 0, to: 0, total: 0 },
         filtros = {},
         sucursales = [],
+        rolesCatalogo = [],
+        usuariosCatalogo = [],
+        sucCatalogo = [],
+        estadosCatalogo = [],
+        insumosCatalogo = [],
     } = usePage().props;
 
     // ================= ESTADOS =================
     const [q, setQ] = useState(filtros.q ?? "");
     const [accion, setAccion] = useState(filtros.accion ?? "");
     const [usuario, setUsuario] = useState(filtros.usuario_id ?? "");
-    const [desde, setDesde] = useState(filtros.desde ?? "");
-    const [hasta, setHasta] = useState(filtros.hasta ?? "");
 
-    // Filtros dependientes
+    const [desde, setDesde] = useState(
+        filtros.desde ? dayjs(filtros.desde) : null
+    );
+
+    const [hasta, setHasta] = useState(
+        filtros.hasta ? dayjs(filtros.hasta) : null
+    );
+
     const [sucursal, setSucursal] = useState("");
     const [rol, setRol] = useState("");
 
-    // Opciones dinámicas
     const [roles, setRoles] = useState([]);
     const [usuariosOpts, setUsuariosOpts] = useState([]);
     const [accionesOpts, setAccionesOpts] = useState([]);
@@ -55,8 +67,8 @@ export default function AuditoriaIndex() {
         if (q) p.q = q;
         if (accion) p.accion = accion;
         if (usuario) p.usuario_id = usuario;
-        if (desde) p.desde = desde;
-        if (hasta) p.hasta = hasta;
+        if (desde) p.desde = desde.format("YYYY-MM-DD");
+        if (hasta) p.hasta = hasta.format("YYYY-MM-DD");
         return p;
     };
 
@@ -72,19 +84,17 @@ export default function AuditoriaIndex() {
         setQ("");
         setAccion("");
         setUsuario("");
-        setDesde("");
-        setHasta("");
-
+        setDesde(null);
+        setHasta(null);
         setSucursal("");
         setRol("");
         setRoles([]);
         setUsuariosOpts([]);
         setAccionesOpts([]);
-
         router.get(route("auditoria.index"), {}, { replace: true });
     };
 
-    // =========== AJAX: CARGA ROLES CUANDO CAMBIA SUCURSAL ===========
+    // ========= AJAX dinámico =========
     useEffect(() => {
         setRol("");
         setUsuario("");
@@ -96,12 +106,10 @@ export default function AuditoriaIndex() {
         if (!sucursal) return;
 
         fetch(route("auditoria.opciones.roles", { sucursal_id: sucursal }))
-            .then(res => res.json())
-            .then(data => setRoles(data || []))
-            .catch(err => console.error("Error roles:", err));
+            .then((res) => res.json())
+            .then((data) => setRoles(data || []));
     }, [sucursal]);
 
-    // ========== AJAX: CARGA USUARIOS CUANDO CAMBIA ROL ==========
     useEffect(() => {
         setUsuario("");
         setAccion("");
@@ -110,16 +118,16 @@ export default function AuditoriaIndex() {
 
         if (!sucursal || !rol) return;
 
-        fetch(route("auditoria.opciones.usuarios", {
-            sucursal_id: sucursal,
-            rol_id: rol,
-        }))
-            .then(res => res.json())
-            .then(data => setUsuariosOpts(data || []))
-            .catch(err => console.error("Error usuarios:", err));
+        fetch(
+            route("auditoria.opciones.usuarios", {
+                sucursal_id: sucursal,
+                rol_id: rol,
+            })
+        )
+            .then((res) => res.json())
+            .then((data) => setUsuariosOpts(data || []));
     }, [sucursal, rol]);
 
-    // ========== AJAX: CARGA ACCIONES CUANDO CAMBIA USUARIO ==========
     useEffect(() => {
         setAccion("");
         setAccionesOpts([]);
@@ -127,9 +135,8 @@ export default function AuditoriaIndex() {
         if (!usuario) return;
 
         fetch(route("auditoria.opciones.acciones", { usuario_id: usuario }))
-            .then(res => res.json())
-            .then(data => setAccionesOpts(data || []))
-            .catch(err => console.error("Error acciones:", err));
+            .then((res) => res.json())
+            .then((data) => setAccionesOpts(data || []));
     }, [usuario]);
 
     // ================= RENDER =================
@@ -143,14 +150,29 @@ export default function AuditoriaIndex() {
                     <h1 className="text-2xl font-semibold mb-6">Auditoría del Sistema</h1>
 
                     {/* ================= FILTROS ================= */}
-                    <Paper sx={{ p: 3, borderRadius: "18px", mb: 4 }} elevation={3}>
+                    <Paper 
+                        sx={{ 
+                            p: 3, 
+                            borderRadius: "18px", 
+                            mb: 4, 
+                            width: "100%" 
+                        }} 
+                        elevation={3}
+                    >
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-                            {/* ========================= FILA 1 ========================= */}
-                            <Grid container spacing={3} sx={{ mb: 2 }}>
-
-                                {/* Buscar (50%) */}
-                                <Grid item xs={12} md={6}>
+                            {/* FILA 1 - Buscar + Fechas */}
+                            <Grid 
+                                container 
+                                spacing={3} 
+                                sx={{ 
+                                    mb: 2, 
+                                    width: "100%", 
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(3, 1fr)"
+                                }}
+                            >
+                                <Grid item xs={12}>
                                     <TextField
                                         fullWidth
                                         label="Buscar"
@@ -171,40 +193,41 @@ export default function AuditoriaIndex() {
                                             }
                                         }}
                                     />
+
                                 </Grid>
 
-                                {/* Fecha desde (25%) */}
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <DatePicker
                                         label="Fecha desde"
-                                        value={desde || null}
-                                        onChange={(val) =>
-                                            setDesde(val?.format("YYYY-MM-DD") || "")
-                                        }
+                                        value={desde}
+                                        onChange={(val) => setDesde(val)}
                                         slotProps={{ textField: { fullWidth: true } }}
                                     />
                                 </Grid>
 
-                                {/* Fecha hasta (25%) */}
-                                <Grid item xs={12} md={3}>
+                                <Grid item xs={12}>
                                     <DatePicker
                                         label="Fecha hasta"
-                                        value={hasta || null}
-                                        onChange={(val) =>
-                                            setHasta(val?.format("YYYY-MM-DD") || "")
-                                        }
+                                        value={hasta}
+                                        onChange={(val) => setHasta(val)}
                                         slotProps={{ textField: { fullWidth: true } }}
                                     />
                                 </Grid>
-
                             </Grid>
 
-                            {/* ========================= FILA 2 ========================= */}
-                            <Grid container spacing={3} sx={{ mb: 2 }}>
-
-                                {/* Sucursal */}
-                                <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                            {/* FILA 2 - Sucursal / Rol / Usuario / Acción */}
+                            <Grid 
+                                container 
+                                spacing={3} 
+                                sx={{ 
+                                    mb: 3,
+                                    width: "100%",
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(4, 1fr)" 
+                                }}
+                            >
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Sucursal</InputLabel>
                                         <Select
                                             value={sucursal}
@@ -219,9 +242,8 @@ export default function AuditoriaIndex() {
                                     </FormControl>
                                 </Grid>
 
-                                {/* Rol */}
-                                <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Rol</InputLabel>
                                         <Select
                                             value={rol}
@@ -237,9 +259,8 @@ export default function AuditoriaIndex() {
                                     </FormControl>
                                 </Grid>
 
-                                {/* Usuario */}
-                                <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Usuario</InputLabel>
                                         <Select
                                             value={usuario}
@@ -255,9 +276,8 @@ export default function AuditoriaIndex() {
                                     </FormControl>
                                 </Grid>
 
-                                {/* Acción */}
-                                <Grid item xs={12} md={3}>
-                                    <FormControl fullWidth sx={{ minWidth: 200 }}>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
                                         <InputLabel>Acción</InputLabel>
                                         <Select
                                             value={accion}
@@ -267,92 +287,61 @@ export default function AuditoriaIndex() {
                                         >
                                             <MenuItem value="">Todas</MenuItem>
                                             {accionesOpts.map((a) => (
-                                                <MenuItem key={a} value={a}>
-                                                    {getActionLabel(a)}
-                                                </MenuItem>
+                                                <MenuItem key={a} value={a}>{getActionLabel(a)}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
-
                             </Grid>
 
-                            {/* ========================= FILA 3 ========================= */}
-                            <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
-                                    <Button
-                                        fullWidth
-                                        variant="contained"
-                                        startIcon={<FilterAltIcon />}
-                                        onClick={submitFilters}
-                                        sx={{ height: "48px", borderRadius: "10px" }}
-                                    >
-                                        FILTRAR
-                                    </Button>
-                                </Grid>
+                            {/* FILA 3 - Botones */}
+                            <Grid 
+                                container 
+                                spacing={2} 
+                                sx={{
+                                    width: "100%",
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr"
+                                }}
+                            >
+                                <Button
+                                    fullWidth
+                                    variant="contained"
+                                    startIcon={<FilterAltIcon />}
+                                    onClick={submitFilters}
+                                    sx={{ height: "48px" }}
+                                >
+                                    FILTRAR
+                                </Button>
 
-                                <Grid item xs={12} md={6}>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        color="secondary"
-                                        startIcon={<ClearAllIcon />}
-                                        onClick={resetFilters}
-                                        sx={{ height: "48px", borderRadius: "10px" }}
-                                    >
-                                        LIMPIAR
-                                    </Button>
-                                </Grid>
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    color="secondary"
+                                    startIcon={<ClearAllIcon />}
+                                    onClick={resetFilters}
+                                    sx={{ height: "48px" }}
+                                >
+                                    LIMPIAR
+                                </Button>
                             </Grid>
 
                         </LocalizationProvider>
                     </Paper>
 
-                    {/* ================= TABLA ================= */}
-                    <div className="overflow-x-auto border rounded-2xl">
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-3 py-2">Fecha</th>
-                                    <th className="px-3 py-2">Usuario</th>
-                                    <th className="px-3 py-2">Acción</th>
-                                    <th className="px-3 py-2">Antes / Después</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {logs.data.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="px-3 py-6 text-center text-gray-500"
-                                        >
-                                            No hay registros de auditoría.
-                                        </td>
-                                    </tr>
-                                )}
 
-                                {logs.data.map((l) => (
-                                    <tr key={l.id_audit} className="border-t hover:bg-gray-50">
-                                        <td className="px-3 py-2">
-                                            {new Date(l.created_at).toLocaleString()}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            {l.usuario_nombre || "—"}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            {getActionLabel(l.accion)}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            <AuditDiff
-                                                before={l.valores_antes || {}}
-                                                after={l.valores_despues || {}}
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+
+
+
+                    {/* ================= TABLA ================= */}
+                    <AuditTable
+                        logs={logs}
+                        rolesCatalogo={rolesCatalogo}
+                        usuariosCatalogo={usuariosCatalogo}
+                        sucursalesCatalogo={sucCatalogo}
+                        estadosCatalogo={estadosCatalogo}
+                        insumosCatalogo={insumosCatalogo}
+                    />
 
                     {/* ================= PAGINACIÓN ================= */}
                     <div className="flex justify-between items-center mt-6">
@@ -360,22 +349,18 @@ export default function AuditoriaIndex() {
                             Mostrando {logs.from}–{logs.to} de {logs.total}
                         </div>
 
-                        <div className="flex gap-2">
-                            {logs.links.map((link, i) => (
-                                <Link
-                                    key={i}
-                                    href={link.url || "#"}
-                                    preserveScroll
-                                    preserveState
-                                    className={`px-3 py-1 rounded-lg border ${
-                                        link.active
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-white hover:bg-gray-50"
-                                    } ${!link.url ? "pointer-events-none opacity-50" : ""}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
-                        </div>
+                        <Pagination
+                            color="primary"
+                            shape="rounded"
+                            count={logs.last_page}
+                            page={logs.current_page}
+                            onChange={(e, page) => {
+                                router.get(route("auditoria.index"), { ...filtros, page }, {
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                });
+                            }}
+                        />
                     </div>
                 </div>
             </div>
