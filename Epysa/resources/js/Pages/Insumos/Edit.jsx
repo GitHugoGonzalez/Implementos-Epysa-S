@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import Swal from "sweetalert2"; // 👈 agregado
 
 export default function Edit() {
     const { insumo, imagen } = usePage().props;
@@ -13,8 +14,8 @@ export default function Edit() {
         stock: insumo?.stock ?? 0,
         descripcion_insumo: insumo?.descripcion_insumo ?? "",
         precio_insumo: insumo?.precio_insumo ?? 0,
-        imagen: null,            // File | null
-        eliminar_imagen: false,  // bool
+        imagen: null,
+        eliminar_imagen: false,
     });
 
     const [processing, setProcessing] = useState(false);
@@ -26,7 +27,7 @@ export default function Edit() {
 
     const buildFormData = () => {
         const fd = new FormData();
-        fd.append("_method", "PUT"); // <- spoofing en el body (clave)
+        fd.append("_method", "PUT");
         fd.append("nombre_insumo", data.nombre_insumo ?? "");
         fd.append("stock", String(data.stock ?? 0));
         fd.append("descripcion_insumo", data.descripcion_insumo ?? "");
@@ -45,19 +46,36 @@ export default function Edit() {
 
         const fd = buildFormData();
 
-        // Enviamos POST con _method=PUT + header de override
         router.post(route("insumos.update", insumo.id_insumo), fd, {
             headers: { "X-HTTP-Method-Override": "PUT" },
-            onError: (errs) => setErrors(errs || {}),
-            onFinish: () => setProcessing(false),
+
+            onError: (errs) => {
+                setErrors(errs || {});
+
+                Swal.fire({
+                    icon: "error",
+                    title: "Error al guardar",
+                    text: "Revisa los campos marcados en rojo.",
+                    confirmButtonColor: "#d33",
+                });
+            },
+
             onSuccess: () => {
                 setPreview(null);
                 setField("imagen", null);
                 setField("eliminar_imagen", false);
                 if (fileRef.current) fileRef.current.value = "";
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Guardado correctamente",
+                    text: "Los cambios se han actualizado.",
+                    confirmButtonColor: "#3085d6",
+                });
             },
-            // MUY IMPORTANTE: indicamos a Inertia que esto ya es FormData
-            // para que NO intente serializarlo de nuevo.
+
+            onFinish: () => setProcessing(false),
+
             forceFormData: true,
             preserveScroll: true,
         });
@@ -84,12 +102,9 @@ export default function Edit() {
                 <div className="mx-auto max-w-3xl bg-white shadow rounded-2xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <h1 className="text-xl font-semibold">Editar Insumo</h1>
-                        <Link href={route("insumos.index")} className="text-sm underline">
-                            Volver
-                        </Link>
                     </div>
 
-                    {/* Imagen actual / selector */}
+                    {/* Imagen */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium">Imagen</label>
 
@@ -141,9 +156,7 @@ export default function Edit() {
                                 >
                                     Subir imagen
                                 </label>
-                                <span className="text-xs text-gray-500">
-                                    JPG / PNG / WEBP (máx. 4MB)
-                                </span>
+                                <span className="text-xs text-gray-500">JPG / PNG / WEBP (máx. 4MB)</span>
                             </div>
                         )}
 
@@ -153,6 +166,7 @@ export default function Edit() {
                     </div>
 
                     <form onSubmit={submit} className="space-y-4">
+
                         {/* Nombre */}
                         <div>
                             <label className="block text-sm font-medium mb-1">Nombre</label>
@@ -200,9 +214,7 @@ export default function Edit() {
 
                         {/* Descripción */}
                         <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Descripción
-                            </label>
+                            <label className="block text-sm font-medium mb-1">Descripción</label>
                             <textarea
                                 className="w-full border rounded-lg p-2"
                                 rows={4}
@@ -210,9 +222,7 @@ export default function Edit() {
                                 onChange={(e) => setField("descripcion_insumo", e.target.value)}
                             />
                             {errors.descripcion_insumo && (
-                                <p className="text-red-600 text-sm">
-                                    {errors.descripcion_insumo}
-                                </p>
+                                <p className="text-red-600 text-sm">{errors.descripcion_insumo}</p>
                             )}
                         </div>
 
