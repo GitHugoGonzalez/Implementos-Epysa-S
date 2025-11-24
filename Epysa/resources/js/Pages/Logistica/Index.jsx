@@ -37,7 +37,7 @@ export default function Index() {
                                         Estado Solicitud
                                     </th>
                                     {/* Columnas eliminadas: Estado Logística, Envío, ETA */}
-                                    <th className="px-4 py-2 text-left"></th> 
+                                    <th className="px-4 py-2 text-left"></th>
                                 </tr>
                             </thead>
                             <tbody>

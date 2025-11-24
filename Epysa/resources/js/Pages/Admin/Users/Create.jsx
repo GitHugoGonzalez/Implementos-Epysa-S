@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo } from "react";
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-
+import Swal from "sweetalert2"; // 👈 agregado
 
 export default function CreateUser() {
     const { sucursales = [], rolesPermitidos = [] } = usePage().props;
 
-    // Normaliza roles: soporta objetos {id_rol,nombre_rol} o strings antiguos
+    // Normaliza roles
     const roleOptions = useMemo(() => {
         return rolesPermitidos.map((r) =>
             typeof r === "string" ? { id_rol: null, nombre_rol: r } : r
@@ -19,23 +19,43 @@ export default function CreateUser() {
         name: "",
         email: "",
         password: "",
-        // Enviamos id_rol si existe; si no, nombre_rol (backend soporta ambos)
         id_rol: firstRole.id_rol ?? "",
         nombre_rol: firstRole.id_rol ? "" : firstRole.nombre_rol ?? "",
         id_sucursal: "",
     });
 
+    /** Si hay error importante en email, mostrar SweetAlert */
     useEffect(() => {
         if (errors?.email) {
-            // Mensaje genérico por si cambia el texto exacto del backend
-            alert(`⚠️ ${errors.email}`);
+            Swal.fire({
+                icon: "error",
+                title: "Error en el email",
+                text: errors.email,
+                confirmButtonColor: "#d33",
+            });
         }
     }, [errors?.email]);
 
     const submit = (e) => {
         e.preventDefault();
+
         post("/admin/usuarios", {
-            onSuccess: () =>
+            onError: (err) => {
+                Swal.fire({
+                    icon: "error",
+                    title: "No se pudo crear el usuario",
+                    text: "Revisa los campos marcados.",
+                });
+            },
+
+            onSuccess: () => {
+                Swal.fire({
+                    icon: "success",
+                    title: "Usuario creado",
+                    text: "El usuario se registró correctamente.",
+                    confirmButtonColor: "#3085d6",
+                });
+
                 reset({
                     name: "",
                     email: "",
@@ -45,28 +65,26 @@ export default function CreateUser() {
                         ? ""
                         : firstRole.nombre_rol ?? "",
                     id_sucursal: "",
-                }),
+                });
+            },
         });
     };
 
-    // Handler del select de rol: guardamos ambos campos coherentes
     const handleChangeRol = (e) => {
         const idx = Number(e.target.value);
         const sel = roleOptions[idx] || { id_rol: "", nombre_rol: "" };
+
         setData("id_rol", sel.id_rol ?? "");
         setData("nombre_rol", sel.id_rol ? "" : sel.nombre_rol ?? "");
     };
 
-    // Valor del select: índice del rol elegido (para simplificar)
     const selectedRoleIndex = (() => {
-        // prioridad id_rol
         if (data.id_rol) {
             const i = roleOptions.findIndex(
                 (r) => String(r.id_rol) === String(data.id_rol)
             );
             if (i >= 0) return String(i);
         }
-        // fallback por nombre_rol
         if (data.nombre_rol) {
             const i = roleOptions.findIndex(
                 (r) =>
@@ -84,12 +102,7 @@ export default function CreateUser() {
             <div className="py-8 px-4 md:px-8">
                 <div className="mx-auto max-w-2xl bg-white shadow rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-2xl font-semibold">
-                            Crear usuario
-                        </h1>
-                        <Link href="/dashboard" className="text-sm underline">
-                            Volver
-                        </Link>
+                        <h1 className="text-2xl font-semibold">Crear usuario</h1>
                     </div>
 
                     <form onSubmit={submit} className="space-y-4">
@@ -100,9 +113,7 @@ export default function CreateUser() {
                             <input
                                 className="w-full border rounded-lg p-2"
                                 value={data.name}
-                                onChange={(e) =>
-                                    setData("name", e.target.value)
-                                }
+                                onChange={(e) => setData("name", e.target.value)}
                             />
                             {errors.name && (
                                 <p className="text-red-600 text-sm mt-1">
@@ -119,9 +130,7 @@ export default function CreateUser() {
                                 type="email"
                                 className="w-full border rounded-lg p-2"
                                 value={data.email}
-                                onChange={(e) =>
-                                    setData("email", e.target.value)
-                                }
+                                onChange={(e) => setData("email", e.target.value)}
                             />
                             {errors.email && (
                                 <p className="text-red-600 text-sm mt-1">
@@ -138,9 +147,7 @@ export default function CreateUser() {
                                 type="password"
                                 className="w-full border rounded-lg p-2"
                                 value={data.password}
-                                onChange={(e) =>
-                                    setData("password", e.target.value)
-                                }
+                                onChange={(e) => setData("password", e.target.value)}
                             />
                             {errors.password && (
                                 <p className="text-red-600 text-sm mt-1">
@@ -167,7 +174,7 @@ export default function CreateUser() {
                                     </option>
                                 ))}
                             </select>
-                            {/* Mostrar errores posibles del backend */}
+
                             {(errors.id_rol || errors.nombre_rol) && (
                                 <p className="text-red-600 text-sm mt-1">
                                     {errors.id_rol || errors.nombre_rol}
@@ -190,10 +197,7 @@ export default function CreateUser() {
                                     Selecciona una sucursal…
                                 </option>
                                 {sucursales.map((s) => (
-                                    <option
-                                        key={s.id_sucursal}
-                                        value={s.id_sucursal}
-                                    >
+                                    <option key={s.id_sucursal} value={s.id_sucursal}>
                                         {s.ciudad} — {s.direccion}
                                     </option>
                                 ))}

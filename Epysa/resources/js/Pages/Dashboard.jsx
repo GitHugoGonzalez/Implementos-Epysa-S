@@ -136,22 +136,20 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 onClick={() => setActiveTab("graficos")}
-                                className={`px-4 py-2 text-sm border-b-2 ${
-                                    activeTab === "graficos"
-                                        ? "border-blue-600 text-blue-600 font-semibold"
-                                        : "border-transparent text-gray-500 hover:text-gray-700"
-                                }`}
+                                className={`px-4 py-2 text-sm border-b-2 ${activeTab === "graficos"
+                                    ? "border-blue-600 text-blue-600 font-semibold"
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                                    }`}
                             >
                                 Gráficos
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab("tablas")}
-                                className={`px-4 py-2 text-sm border-b-2 ${
-                                    activeTab === "tablas"
-                                        ? "border-blue-600 text-blue-600 font-semibold"
-                                        : "border-transparent text-gray-500 hover:text-gray-700"
-                                }`}
+                                className={`px-4 py-2 text-sm border-b-2 ${activeTab === "tablas"
+                                    ? "border-blue-600 text-blue-600 font-semibold"
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                                    }`}
                             >
                                 Tablas
                             </button>
@@ -245,8 +243,8 @@ export default function Dashboard() {
                                                             key={`cell-${i}`}
                                                             fill={
                                                                 COLORS[
-                                                                    i %
-                                                                        COLORS.length
+                                                                i %
+                                                                COLORS.length
                                                                 ]
                                                             }
                                                         />
@@ -335,48 +333,43 @@ export default function Dashboard() {
                                                 return (
                                                     <tr
                                                         key={i}
-                                                        className={`border-b last:border-0 ${
-                                                            isTop1
-                                                                ? "bg-emerald-50"
-                                                                : ""
-                                                        }`}
+                                                        className={`border-b last:border-0 ${isTop1
+                                                            ? "bg-emerald-50"
+                                                            : ""
+                                                            }`}
                                                     >
                                                         <td
-                                                            className={`py-2 pr-4 ${
-                                                                isTop1
-                                                                    ? "font-semibold text-emerald-800"
-                                                                    : ""
-                                                            }`}
+                                                            className={`py-2 pr-4 ${isTop1
+                                                                ? "font-semibold text-emerald-800"
+                                                                : ""
+                                                                }`}
                                                         >
                                                             {row.usuario_nombre ??
                                                                 row.nombre ??
                                                                 "-"}
                                                         </td>
                                                         <td
-                                                            className={`py-2 pr-4 ${
-                                                                isTop1
-                                                                    ? "text-emerald-700"
-                                                                    : ""
-                                                            }`}
+                                                            className={`py-2 pr-4 ${isTop1
+                                                                ? "text-emerald-700"
+                                                                : ""
+                                                                }`}
                                                         >
                                                             {row.rol ?? "-"}
                                                         </td>
                                                         <td
-                                                            className={`py-2 pr-4 ${
-                                                                isTop1
-                                                                    ? "text-emerald-700"
-                                                                    : ""
-                                                            }`}
+                                                            className={`py-2 pr-4 ${isTop1
+                                                                ? "text-emerald-700"
+                                                                : ""
+                                                                }`}
                                                         >
                                                             {row.sucursal_nombre ??
                                                                 "-"}
                                                         </td>
                                                         <td
-                                                            className={`py-2 text-right ${
-                                                                isTop1
-                                                                    ? "font-bold text-emerald-800"
-                                                                    : "font-semibold"
-                                                            }`}
+                                                            className={`py-2 text-right ${isTop1
+                                                                ? "font-bold text-emerald-800"
+                                                                : "font-semibold"
+                                                                }`}
                                                         >
                                                             {row.total ?? 0}
                                                         </td>
@@ -419,34 +412,30 @@ export default function Dashboard() {
                                                 return (
                                                     <tr
                                                         key={i}
-                                                        className={`border-b last:border-0 ${
-                                                            isTop1 ? "bg-emerald-50" : ""
-                                                        }`}
+                                                        className={`border-b last:border-0 ${isTop1 ? "bg-emerald-50" : ""
+                                                            }`}
                                                     >
                                                         <td
-                                                            className={`py-2 pr-4 ${
-                                                                isTop1
-                                                                    ? "font-semibold text-emerald-800"
-                                                                    : ""
-                                                            }`}
+                                                            className={`py-2 pr-4 ${isTop1
+                                                                ? "font-semibold text-emerald-800"
+                                                                : ""
+                                                                }`}
                                                         >
                                                             {row.insumo_nombre ?? "-"}
                                                         </td>
 
                                                         <td
-                                                            className={`py-2 pr-4 text-right ${
-                                                                isTop1
-                                                                    ? "font-bold text-emerald-800"
-                                                                    : "font-semibold"
-                                                            }`}
+                                                            className={`py-2 pr-4 text-right ${isTop1
+                                                                ? "font-bold text-emerald-800"
+                                                                : "font-semibold"
+                                                                }`}
                                                         >
                                                             {row.total_cant ?? 0}
                                                         </td>
 
                                                         <td
-                                                            className={`py-2 text-right ${
-                                                                isTop1 ? "text-emerald-700" : ""
-                                                            }`}
+                                                            className={`py-2 text-right ${isTop1 ? "text-emerald-700" : ""
+                                                                }`}
                                                         >
                                                             {row.solicitudes ?? 0}
                                                         </td>
