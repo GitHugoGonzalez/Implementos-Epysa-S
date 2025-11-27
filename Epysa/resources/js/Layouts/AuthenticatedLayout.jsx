@@ -106,7 +106,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             Nueva Solicitud
                                         </NavLink>
 
-                                       
+
                                     </>
                                 ) : (
                                     <>
@@ -244,7 +244,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Nueva Solicitud
                                 </ResponsiveNavLink>
 
-                               
+
                             </>
                         ) : (
                             <>
@@ -325,20 +325,18 @@ export default function AuthenticatedLayout({ header, children }) {
                 <>
                     {/* Overlay */}
                     <div
-                        className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${
-                            isSideOpen
+                        className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${isSideOpen
                                 ? "opacity-100"
                                 : "pointer-events-none opacity-0"
-                        }`}
+                            }`}
                         onClick={() => setIsSideOpen(false)}
                         aria-hidden={!isSideOpen}
                     />
 
                     {/* Drawer */}
                     <aside
-                        className={`fixed right-0 top-0 z-50 h-full w-72 transform bg-white shadow-xl transition-transform duration-300 ${
-                            isSideOpen ? "translate-x-0" : "translate-x-full"
-                        }`}
+                        className={`fixed right-0 top-0 z-50 h-full w-72 transform bg-white shadow-xl transition-transform duration-300 ${isSideOpen ? "translate-x-0" : "translate-x-full"
+                            }`}
                         role="dialog"
                         aria-modal="true"
                         aria-label="Menú de usuario"
