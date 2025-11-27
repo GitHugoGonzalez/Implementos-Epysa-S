@@ -28,13 +28,13 @@ export default function Login() {
         try {
             // Configurar axios
             axios.defaults.withCredentials = true;
-            
+
             // Obtener token CSRF primero
             await axios.get('http://localhost:8000/sanctum/csrf-cookie');
-            
+
             // Intentar login
             const response = await axios.post('http://localhost:8000/login', formData);
-            
+
             if (response.status === 200) {
                 // Redirigir al home y recargar para actualizar navbar
                 window.location.href = '/';
@@ -58,14 +58,14 @@ export default function Login() {
                         Iniciar Sesión
                     </h2>
                 </div>
-                
+
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {errors.general && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                             {errors.general}
                         </div>
                     )}
-                    
+
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
                             <label htmlFor="email" className="sr-only">Email</label>
@@ -84,7 +84,7 @@ export default function Login() {
                                 <p className="text-red-500 text-xs mt-1">{errors.email[0]}</p>
                             )}
                         </div>
-                        
+
                         <div>
                             <label htmlFor="password" className="sr-only">Password</label>
                             <input

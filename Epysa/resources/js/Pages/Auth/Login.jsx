@@ -110,12 +110,7 @@ export default function Login({ status, canResetPassword }) {
                             >
                                 Iniciar Sesión
                             </button>
-                            <Link
-                                href={route("register")}
-                                className="w-full inline-flex items-center justify-center rounded-md  bg-blue-600 hover:bg-blue-700 transition px-4 py-3 text-white font-semibold mt-2 text-center"
-                            >
-                                Registrarse
-                            </Link>
+                            
                         </form>
                     </div>
                 </div>

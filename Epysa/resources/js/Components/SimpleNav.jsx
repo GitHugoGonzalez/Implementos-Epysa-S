@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 export default function SimpleNav() {
     const page = usePage();
     const { auth = {} } = page.props || {};
-    const user = auth.user || null;
+    const user = auth.user || null; // Clave para la lógica condicional
 
     // ===== Helpers =====
     const norm = (v) =>
@@ -16,7 +16,6 @@ export default function SimpleNav() {
             .replace(/\p{Diacritic}/gu, "")
             .trim();
 
-    // rol puede venir como string (legacy) o como objeto { nombre_rol }, o id
     const rawRole =
         user?.rol?.nombre_rol ??
         user?.rol_nombre ??
@@ -31,14 +30,12 @@ export default function SimpleNav() {
         (Number.isFinite(Number(user?.rol)) ? Number(user?.rol) : null) ||
         null;
 
-    // Permiso: Jefe (3) o Administrador (5) o nombre que contenga “jefe/administrador”
     const canManageUsers =
         roleName.includes("jefe") ||
         roleName.includes("administrador") ||
         roleId === 3 ||
         roleId === 5;
 
-    // Nuevo: operario solo ve "Nueva Solicitud" y "Mi Perfil"
     const isOperario = roleName.includes("operario");
 
     const isPathActive = (path) =>
@@ -48,7 +45,6 @@ export default function SimpleNav() {
         useState(false);
     const [isSideOpen, setIsSideOpen] = useState(false);
 
-    // route() seguro: usa Ziggy si existe; si no, usa fallback
     const safeRoute = (name, fallback = "#") => {
         try {
             const url = route(name);
@@ -59,7 +55,6 @@ export default function SimpleNav() {
         return fallback;
     };
 
-    // Cerrar el drawer con ESC
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && setIsSideOpen(false);
         window.addEventListener("keydown", onKey);
@@ -82,207 +77,226 @@ export default function SimpleNav() {
                             </Link>
                         </div>
 
-                        <div className="hidden items-center gap-2 sm:flex">
-                            {isOperario ? (
-                                <>
-                                    <NavLink
-                                        href="/solicitudes/crear"
-                                        active={isPathActive("/solicitudes/crear")}
-                                        className="!text-white hover:!text-blue-100 font-medium"
-                                    >
-                                        Nueva Solicitud
-                                    </NavLink>
+                        {/* 💡 Desktop links: SOLO se renderizan si hay usuario */}
+                        {user && (
+                            <div className="hidden items-center gap-2 sm:flex">
+                                {isOperario ? (
+                                    <>
+                                        <NavLink
+                                            href="/solicitudes/crear"
+                                            active={isPathActive("/solicitudes/crear")}
+                                            className="!text-white hover:!text-blue-100 font-medium"
+                                        >
+                                            Nueva Solicitud
+                                        </NavLink>
+                                    </>
+                                ) : (
+                                    <>
+                                        <NavLink
+                                            href={safeRoute("dashboard", "/dashboard")}
+                                            active={safeRoute().current?.("dashboard")}
+                                            className="!text-white hover:!text-blue-100 font-medium"
+                                        >
+                                            Dashboard
+                                        </NavLink>
 
+                                        <NavLink
+                                            href="/insumos/index"
+                                            active={isPathActive("/insumos/index")}
+                                            className="!text-white hover:!text-blue-100 font-medium"
+                                        >
+                                            Ver Insumos
+                                        </NavLink>
 
-                                </>
-                            ) : (
-                                <>
-                                    <NavLink
-                                        href={safeRoute("dashboard", "/dashboard")}
-                                        active={route().current("dashboard")}
-                                        className="!text-white hover:!text-blue-100 font-medium"
-                                    >
-                                        Dashboard
-                                    </NavLink>
+                                        <NavLink
+                                            href="/insumos/crear"
+                                            active={isPathActive("/insumos/crear")}
+                                            className="!text-white hover:!text-blue-100 font-medium"
+                                        >
+                                            Agregar Insumo
+                                        </NavLink>
 
-                                    <NavLink
-                                        href="/insumos/index"
-                                        active={isPathActive("/insumos/index")}
-                                        className="!text-white hover:!text-blue-100 font-medium"
-                                    >
-                                        Ver Insumos
-                                    </NavLink>
+                                        <NavLink
+                                            href="/solicitudes/crear"
+                                            active={isPathActive("/solicitudes/crear")}
+                                            className="!text-white hover:!text-blue-100 font-medium"
+                                        >
+                                            Nueva Solicitud
+                                        </NavLink>
 
-                                    <NavLink
-                                        href="/insumos/crear"
-                                        active={isPathActive("/insumos/crear")}
-                                        className="!text-white hover:!text-blue-100 font-medium"
-                                    >
-                                        Agregar Insumo
-                                    </NavLink>
-
-                                    <NavLink
-                                        href="/solicitudes/crear"
-                                        active={isPathActive("/solicitudes/crear")}
-                                        className="!text-white hover:!text-blue-100 font-medium"
-                                    >
-                                        Nueva Solicitud
-                                    </NavLink>
-                                </>
-                            )}
-                        </div>
+                                        
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Botón que abre el side menu (desktop) */}
-                    {user && (
-                        <div className="hidden items-center sm:flex">
-                            <button
-                                type="button"
-                                onClick={() => setIsSideOpen(true)}
-                                className="inline-flex items-center rounded-md bg-transparent px-3 py-2 text-lg font-medium leading-4 text-white transition hover:bg-blue-500 focus:outline-none"
-                                aria-label="Abrir panel de usuario"
-                                aria-expanded={isSideOpen}
-                            >
-                                {user.name}
-                                <svg
-                                    className="-me-0.5 ms-2 h-4 w-4"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
+                    {/* 💡 Botón de usuario / Botón de Login (Derecha) */}
+                    <div className="flex items-center">
+                        {user ? (
+                            // 🟢 SI HAY USUARIO: Muestra el botón de perfil/drawer (Desktop)
+                            <div className="hidden items-center sm:flex">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSideOpen(true)}
+                                    className="inline-flex items-center rounded-md bg-transparent px-3 py-2 text-lg font-medium leading-4 text-white transition hover:bg-blue-500 focus:outline-none"
+                                    aria-label="Abrir panel de usuario"
+                                    aria-expanded={isSideOpen}
                                 >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Botón Hamburguesa (mobile) */}
-                    <div className="-me-2 flex items-center sm:hidden">
-                        <button
-                            onClick={() =>
-                                setShowingNavigationDropdown((prev) => !prev)
-                            }
-                            className="inline-flex items-center justify-center rounded-md p-2 text-white transition hover:bg-blue-500 focus:bg-blue-500 focus:outline-none"
-                            aria-label="Abrir menú"
-                        >
-                            <svg
-                                className="h-6 w-6"
-                                stroke="currentColor"
-                                fill="none"
-                                viewBox="0 0 24 24"
+                                    {user.name}
+                                    <svg
+                                        className="-me-0.5 ms-2 h-4 w-4"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 011.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                        ) : (
+                            // 🔴 SI NO HAY USUARIO: Muestra el botón de Iniciar Sesión (Desktop)
+                            <Link
+                                href={safeRoute("login", "/login")}
+                                className="rounded-lg bg-white px-4 py-2 text-blue-600 font-bold transition hover:bg-blue-100 hidden sm:inline-flex"
                             >
-                                <path
-                                    className={
-                                        !showingNavigationDropdown
-                                            ? "inline-flex"
-                                            : "hidden"
+                                Iniciar Sesión
+                            </Link>
+                        )}
+
+
+                        {/* Botón Hamburguesa (mobile) */}
+                        <div className="-me-2 flex items-center sm:hidden">
+                            {user ? (
+                                // 🟢 Si hay usuario, muestra el botón de hamburguesa para el menú
+                                <button
+                                    onClick={() =>
+                                        setShowingNavigationDropdown((prev) => !prev)
                                     }
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                                <path
-                                    className={
-                                        showingNavigationDropdown
-                                            ? "inline-flex"
-                                            : "hidden"
-                                    }
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            </svg>
-                        </button>
+                                    className="inline-flex items-center justify-center rounded-md p-2 text-white transition hover:bg-blue-500 focus:bg-blue-500 focus:outline-none"
+                                    aria-label="Abrir menú"
+                                >
+                                    <svg
+                                        className="h-6 w-6"
+                                        stroke="currentColor"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            className={!showingNavigationDropdown ? "inline-flex" : "hidden"}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M4 6h16M4 12h16M4 18h16"
+                                        />
+                                        <path
+                                            className={showingNavigationDropdown ? "inline-flex" : "hidden"}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+                            ) : (
+                                // 🔴 Si NO hay usuario, muestra el botón de Iniciar Sesión (Móvil)
+                                <Link
+                                    href={safeRoute("login", "/login")}
+                                    className="rounded-lg bg-white px-3 py-1.5 text-blue-600 font-bold transition hover:bg-blue-100 text-sm"
+                                >
+                                    Iniciar Sesión
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Menú responsive (mobile) */}
-            <div
-                className={
-                    (showingNavigationDropdown ? "block" : "hidden") +
-                    " sm:hidden"
-                }
-            >
-                <div className="space-y-1 bg-white pb-3 pt-2">
-                    {isOperario ? (
-                        <>
-                            <ResponsiveNavLink
-                                href="/solicitudes/crear"
-                                active={isPathActive("/solicitudes/crear")}
-                                className="text-gray-800"
-                            >
-                                Nueva Solicitud
-                            </ResponsiveNavLink>
-
-                            <ResponsiveNavLink
-                                href={route("profile.edit")}
-                                className="text-gray-800"
-                            >
-                                Mi Perfil
-                            </ResponsiveNavLink>
-                        </>
-                    ) : (
-                        <>
-                            <ResponsiveNavLink
-                                href={safeRoute("dashboard", "/dashboard")}
-                                active={route().current("dashboard")}
-                                className="text-gray-800"
-                            >
-                                Dashboard
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                href="/insumos/index"
-                                active={isPathActive("/insumos/index")}
-                                className="text-gray-800"
-                            >
-                                Ver Insumos
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                href="/insumos/crear"
-                                active={isPathActive("/insumos/crear")}
-                                className="text-gray-800"
-                            >
-                                Agregar Insumo
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                href="/solicitudes/crear"
-                                active={isPathActive("/solicitudes/crear")}
-                                className="text-gray-800"
-                            >
-                                Nueva Solicitud
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                href="/solicitudes/historial"
-                                active={isPathActive("/solicitudes/historial")}
-                                className="text-gray-800"
-                            >
-                                Historial
-                            </ResponsiveNavLink>
-
-                            {canManageUsers && (
+            {/* 💡 Menú responsive (mobile): SOLO se renderiza si hay usuario */}
+            {user && (
+                <div
+                    className={
+                        (showingNavigationDropdown ? "block" : "hidden") +
+                        " sm:hidden"
+                    }
+                >
+                    <div className="space-y-1 bg-white pb-3 pt-2">
+                        {isOperario ? (
+                            <>
                                 <ResponsiveNavLink
-                                    href={safeRoute(
-                                        "admin.users.create",
-                                        "/admin/usuarios/crear"
-                                    )}
-                                    active={isPathActive("/admin/usuarios/crear")}
+                                    href="/solicitudes/crear"
+                                    active={isPathActive("/solicitudes/crear")}
                                     className="text-gray-800"
                                 >
-                                    Crear usuarios
+                                    Nueva Solicitud
                                 </ResponsiveNavLink>
-                            )}
-                        </>
-                    )}
-                </div>
 
-                {user && (
+                                <ResponsiveNavLink
+                                    href={safeRoute("profile.edit", "/profile")}
+                                    className="text-gray-800"
+                                >
+                                    Mi Perfil
+                                </ResponsiveNavLink>
+                            </>
+                        ) : (
+                            <>
+                                <ResponsiveNavLink
+                                    href={safeRoute("dashboard", "/dashboard")}
+                                    active={safeRoute().current?.("dashboard")}
+                                    className="text-gray-800"
+                                >
+                                    Dashboard
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href="/insumos/index"
+                                    active={isPathActive("/insumos/index")}
+                                    className="text-gray-800"
+                                >
+                                    Ver Insumos
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href="/insumos/crear"
+                                    active={isPathActive("/insumos/crear")}
+                                    className="text-gray-800"
+                                >
+                                    Agregar Insumo
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href="/solicitudes/crear"
+                                    active={isPathActive("/solicitudes/crear")}
+                                    className="text-gray-800"
+                                >
+                                    Nueva Solicitud
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href="/solicitudes/historial"
+                                    active={isPathActive("/solicitudes/historial")}
+                                    className="text-gray-800"
+                                >
+                                    Historial
+                                </ResponsiveNavLink>
+
+                                {canManageUsers && (
+                                    <ResponsiveNavLink
+                                        href={safeRoute(
+                                            "admin.users.create",
+                                            "/admin/usuarios/crear"
+                                        )}
+                                        active={isPathActive("/admin/usuarios/crear")}
+                                        className="text-gray-800"
+                                    >
+                                        Crear usuarios
+                                    </ResponsiveNavLink>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    {/* Sección de perfil móvil */}
                     <div className="border-t border-blue-200 bg-white pb-1 pt-4">
                         <div className="px-4">
                             <div className="text-base font-medium text-gray-800">
@@ -294,7 +308,7 @@ export default function SimpleNav() {
                         </div>
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink
-                                href={route("profile.edit")}
+                                href={safeRoute("profile.edit", "/profile")}
                                 className="text-gray-800"
                             >
                                 Mi Perfil
@@ -312,25 +326,24 @@ export default function SimpleNav() {
                             )}
                             <ResponsiveNavLink
                                 method="post"
-                                href={route("logout")}
+                                href={safeRoute("logout", "/logout")}
                                 as="button"
                                 className="text-gray-800"
                             >
-
                                 Cerrar Sesión
                             </ResponsiveNavLink>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* ==== SIDE MENU (Drawer) ==== */}
+            {/* 💡 SIDE MENU (Drawer): SOLO se renderiza si hay usuario */}
             {user && (
                 <>
                     <div
                         className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${isSideOpen
-                                ? "opacity-100"
-                                : "pointer-events-none opacity-0"
+                            ? "opacity-100"
+                            : "pointer-events-none opacity-0"
                             }`}
                         onClick={() => setIsSideOpen(false)}
                         aria-hidden={!isSideOpen}
@@ -359,26 +372,13 @@ export default function SimpleNav() {
                                 onClick={() => setIsSideOpen(false)}
                                 aria-label="Cerrar panel"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
+                                {/* SVG de cerrar */}
                             </button>
                         </div>
 
                         <div className="px-2 py-3">
                             <Link
-                                href={route("profile.edit")}
+                                href={safeRoute("profile.edit", "/profile")}
                                 className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
                                 onClick={() => setIsSideOpen(false)}
                             >
@@ -410,7 +410,7 @@ export default function SimpleNav() {
                                     </Link>
 
                                     <Link
-                                        href={route("auditoria.index")}
+                                        href={safeRoute("auditoria.index", "/auditoria")}
                                         className="flex items-center rounded-lg px-3 py-2 text-gray-800 hover:bg-gray-100"
                                         onClick={() => setIsSideOpen(false)}
                                     >
@@ -420,7 +420,7 @@ export default function SimpleNav() {
                             )}
 
                             <Link
-                                href={route("logout")}
+                                href={safeRoute("logout", "/logout")}
                                 method="post"
                                 as="button"
                                 className="mt-2 w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50"
