@@ -131,7 +131,7 @@ class LogisticaController extends Controller
             'motivo'             => ['nullable','string','max:255'], // comentario opcional
         ]);
 
-        DB::connection('newdb')->transaction(function () use ($id, $data) {
+        DB::connection('newdb')->transaction(function () use ($id, $data, $user) {
             $conn = DB::connection('newdb');
 
             $idAprobJefe = $this->estadoId('aprobado jefe');
@@ -156,12 +156,18 @@ class LogisticaController extends Controller
                 'ruta_asignada'  => $data['ruta_asignada'],
             ];
 
+            $esNuevaAprobacion = false;
             if ($prev) {
                 $conn->table('Logistica')->where('id_solicitud', $id)->update($payload);
+                // Si antes estaba rechazado y ahora se aprueba
+                if ($prev->estado_logistica === 'rechazado') {
+                    $esNuevaAprobacion = true;
+                }
             } else {
                 $payload['id_solicitud']     = $id;
                 $payload['estado_logistica'] = 'pendiente';
                 $conn->table('Logistica')->insert($payload);
+                $esNuevaAprobacion = true;
             }
 
             if (!empty($data['marcar_en_transito'])) {
@@ -170,75 +176,86 @@ class LogisticaController extends Controller
                     ->update(['estado_logistica' => 'en_transito']);
             }
 
-            // Detectar retraso
+            // Obtener datos actualizados para el correo
             $nowLog = $conn->table('Logistica')->where('id_solicitud', $id)->first();
+            
+            // Detectar retraso
             $hayRetraso = false;
             if ($prev && $prev->fecha_estimada && $nowLog->fecha_estimada) {
                 $hayRetraso = (strtotime($nowLog->fecha_estimada) > strtotime($prev->fecha_estimada));
             }
 
-            if ($hayRetraso) {
-                // Datos para email (aprobadores + solicitante)
-                $solRow = $conn->table('Solicitudes as s')
-                    ->join('Insumos as i', 'i.id_insumo', '=', 's.id_insumo')
-                    ->join('Sucursal as su', 'su.id_sucursal', '=', 's.id_sucursal')
-                    ->join('Usuarios as us', 'us.id_us', '=', 's.id_us') // solicitante
-                    ->where('s.id_solicitud', $id)
-                    ->select([
-                        's.id_solicitud','s.cantidad','s.fecha_sol',
-                        'i.nombre_insumo',
-                        DB::raw("CONCAT(su.ciudad, ' — ', su.direccion) as sucursal_nombre"),
-                        'us.email as solicitante_email',
-                        'us.name  as solicitante_nombre',
-                    ])->first();
+            // Datos para email
+            $solRow = $conn->table('Solicitudes as s')
+                ->join('Insumos as i', 'i.id_insumo', '=', 's.id_insumo')
+                ->join('Sucursal as su', 'su.id_sucursal', '=', 's.id_sucursal')
+                ->join('Usuarios as us', 'us.id_us', '=', 's.id_us') // solicitante
+                ->where('s.id_solicitud', $id)
+                ->select([
+                    's.id_solicitud','s.cantidad','s.fecha_sol',
+                    'i.nombre_insumo',
+                    DB::raw("CONCAT(su.ciudad, ' — ', su.direccion) as sucursal_nombre"),
+                    'us.email as solicitante_email',
+                    'us.name  as solicitante_nombre',
+                ])->first();
 
-                $info = [
-                    'solicitud' => [
-                        'id'        => $solRow->id_solicitud,
-                        'cantidad'  => $solRow->cantidad,
-                        'fecha_sol' => $solRow->fecha_sol,
-                    ],
-                    'insumo'      => $solRow->nombre_insumo,
-                    'sucursal'    => $solRow->sucursal_nombre,
-                    'solicitante' => [
-                        'name'  => $solRow->solicitante_nombre,
-                        'email' => $solRow->solicitante_email,
-                    ],
-                ];
+            $info = [
+                'solicitud' => [
+                    'id'        => $solRow->id_solicitud,
+                    'cantidad'  => $solRow->cantidad,
+                    'fecha_sol' => $solRow->fecha_sol,
+                ],
+                'insumo'      => $solRow->nombre_insumo,
+                'sucursal'    => $solRow->sucursal_nombre,
+                'solicitante' => [
+                    'name'  => $solRow->solicitante_nombre,
+                    'email' => $solRow->solicitante_email,
+                ],
+                'logistica' => [
+                    'fecha_envio'    => $nowLog->fecha_envio,
+                    'fecha_estimada' => $nowLog->fecha_estimada,
+                    'numero_camion'  => $nowLog->numero_camion,
+                    'ruta_asignada'  => $nowLog->ruta_asignada,
+                    'estado'         => $nowLog->estado_logistica,
+                ],
+                'aprobado_por' => $user->name,
+            ];
 
-                $destinatarios = $this->aprobadoresDeSolicitud($id);
+            $destinatarios = $this->aprobadoresDeSolicitud($id);
 
-                // Enviar post-commit: aprobadores + operario
-                DB::afterCommit(function () use ($destinatarios, $info, $data, $solRow) {
-                    // Aprobadores
+            // Enviar post-commit: SOLO para nueva aprobación
+            DB::afterCommit(function () use ($destinatarios, $info, $solRow, $esNuevaAprobacion) {
+                // Envío de correo por NUEVA APROBACIÓN
+                if ($esNuevaAprobacion) {
+                    // A aprobadores
                     foreach ($destinatarios as $u) {
                         if (!$u->email) continue;
                         try {
                             Mail::to($u->email)->send(
-                                new \App\Mail\LogisticaRetrasoMail($info, $data['motivo'] ?? '')
+                                new \App\Mail\LogisticaAprobacionMail($info)
                             );
                         } catch (\Throwable $e) {
-                            Log::error('Error enviando correo de retraso (aprobador)', [
+                            Log::error('Error enviando correo de aprobación (aprobador)', [
                                 'to' => $u->email,
                                 'error' => $e->getMessage(),
                             ]);
                         }
                     }
-                    // Operario solicitante
+                    // Al operario solicitante
                     if (!empty($solRow->solicitante_email)) {
                         try {
                             Mail::to($solRow->solicitante_email)->send(
-                                new \App\Mail\LogisticaRetrasoMail($info, $data['motivo'] ?? '')
+                                new \App\Mail\LogisticaAprobacionMail($info)
                             );
                         } catch (\Throwable $e) {
-                            Log::error('Error enviando correo de retraso (solicitante)', [
+                            Log::error('Error enviando correo de aprobación (solicitante)', [
                                 'to' => $solRow->solicitante_email,
                                 'error' => $e->getMessage(),
                             ]);
                         }
                     }
-                });
-            }
+                }
+            });
         });
 
         return redirect()->route('sol.logistica.edit', $id)->with('success', 'Datos de logística guardados.');
