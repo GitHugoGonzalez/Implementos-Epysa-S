@@ -74,8 +74,8 @@ export default function Edit() {
     const approveButtonText = isApproved
         ? "Solicitud Aprobada"
         : processing
-        ? "Aprobando…"
-        : "Aprobar y Guardar";
+            ? "Aprobando…"
+            : "Aprobar y Guardar";
     const approveButtonClass = isApproved
         ? "bg-gray-400 cursor-not-allowed"
         : "bg-blue-600 hover:opacity-90";

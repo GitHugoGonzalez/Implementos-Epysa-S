@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
 import SimpleNav from "@/Components/SimpleNav";
-import Modal from "@/Components/Modal";
-import { Snackbar, Alert } from "@mui/material"; // ✅ MUI notification
+
+import { Snackbar, Alert } from "@mui/material";
 
 export default function Create() {
     const { data, setData, post, processing, errors, reset, transform } =
@@ -314,33 +314,6 @@ export default function Create() {
                 </div>
             </div>
 
-            {/* Modal de "cargando" mientras processing es true */}
-            <Modal show={processing} onClose={() => {}}>
-                <div className="p-6 text-center">
-                    <svg
-                        className="mx-auto h-10 w-10 animate-spin text-blue-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                        ></circle>
-                        <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v8z"
-                        ></path>
-                    </svg>
-                    <p className="mt-4 text-lg font-semibold text-blue-600">
-                        Guardando insumo...
-                    </p>
-                </div>
-            </Modal>
 
             {/* ✅ Snackbar de éxito MUI */}
             <Snackbar
